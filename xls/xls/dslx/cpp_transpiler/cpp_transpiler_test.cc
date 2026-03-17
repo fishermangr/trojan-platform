@@ -1,0 +1,505 @@
+// Copyright 2020 The XLS Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "xls/dslx/cpp_transpiler/cpp_transpiler.h"
+
+#include <cstddef>
+#include <filesystem>
+#include <string>
+#include <string_view>
+
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+#include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
+#include "absl/strings/str_format.h"
+#include "absl/types/span.h"
+#include "xls/common/golden_files.h"
+#include "xls/common/source_location.h"
+#include "xls/common/status/matchers.h"
+#include "xls/dslx/create_import_data.h"
+#include "xls/dslx/import_data.h"
+#include "xls/dslx/parse_and_typecheck.h"
+
+namespace xls::dslx {
+
+namespace {
+
+using ::absl_testing::StatusIs;
+using ::testing::HasSubstr;
+
+constexpr char kTestdataPath[] = "xls/dslx/cpp_transpiler/testdata";
+
+void ExpectEqualToGoldenFiles(
+    const CppSourceGroup& sources,
+    xabsl::SourceLocation loc = xabsl::SourceLocation::current()) {
+  const std::string test_name =
+      ::testing::UnitTest::GetInstance()->current_test_info()->name();
+  const std::filesystem::path header_path =
+      absl::StrFormat("%s/%s.htxt", kTestdataPath, test_name);
+  ASSERT_FALSE(sources.source.empty());
+  ExpectEqualToGoldenFile(header_path, sources.header, loc);
+  if (sources.source.size() == 1) {
+    const std::filesystem::path source_path =
+        absl::StrFormat("%s/%s.cctxt", kTestdataPath, test_name);
+    ExpectEqualToGoldenFile(source_path, sources.source[0], loc);
+  } else {
+    for (size_t i = 0; i < sources.source.size(); ++i) {
+      const std::filesystem::path source_path =
+          absl::StrFormat("%s/%s_%d.cctxt", kTestdataPath, test_name, i);
+      ExpectEqualToGoldenFile(source_path, sources.source[i], loc);
+    }
+  }
+}
+
+// Verifies that the transpiler can convert a basic enum into C++.
+TEST(CppTranspilerTest, BasicEnums) {
+  const std::string kModule = R"(
+pub enum MyEnum : u32 {
+  A = 0,
+  B = 1,
+  C = 42,
+  // D = 4294967296,
+  E = 4294967295
+}
+)";
+
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "my_module", &import_data));
+  XLS_ASSERT_OK_AND_ASSIGN(
+      auto result,
+      TranspileToCpp(module.module, &import_data,
+                     /*additional_include_headers=*/{}, "fake_path.h"));
+  ExpectEqualToGoldenFiles(result);
+}
+
+// Verifies we can use a constexpr evaluated constant in our enum.
+TEST(CppTranspilerTest, EnumWithConstexprValues) {
+  const std::string kModule = R"(
+const MY_CONST = u48:17;
+
+fn constexpr_fn(x: u16) -> u16 {
+  x * x
+}
+
+pub enum MyEnum : u32 {
+  A = 0,
+  B = MY_CONST as u32,
+  C = constexpr_fn(MY_CONST as u16) as u32
+}
+)";
+
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "my_module", &import_data));
+  XLS_ASSERT_OK_AND_ASSIGN(
+      auto result,
+      TranspileToCpp(module.module, &import_data,
+                     /*additional_include_headers=*/{}, "fake_path.h"));
+  ExpectEqualToGoldenFiles(result);
+}
+
+TEST(CppTranspilerTest, EnumWithS64) {
+  const std::string kModule = R"(
+pub enum MyEnum : s64 {
+  MIN = s64:0x8000000000000000,
+  MID = s64:1 << 62,
+  MAX = s64::MAX,
+}
+)";
+
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "my_module", &import_data));
+  XLS_ASSERT_OK_AND_ASSIGN(
+      auto result,
+      TranspileToCpp(module.module, &import_data,
+                     /*additional_include_headers=*/{}, "fake_path.h"));
+  ExpectEqualToGoldenFiles(result);
+}
+
+TEST(CppTranspilerTest, EnumWithU64) {
+  const std::string kModule = R"(
+pub enum MyEnum : u64 {
+  MIN = u64:0,
+  MID = u64:1 << 63,
+  MAX = u64::MAX,
+}
+)";
+
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "my_module", &import_data));
+  XLS_ASSERT_OK_AND_ASSIGN(
+      auto result,
+      TranspileToCpp(module.module, &import_data,
+                     /*additional_include_headers=*/{}, "fake_path.h"));
+  ExpectEqualToGoldenFiles(result);
+}
+
+// Basic typedef support.
+TEST(CppTranspilerTest, BasicTypedefs) {
+  const std::string kModule = R"(
+const CONST_1 = u32:4;
+
+type MyType = u6;
+type MySignedType = s8;
+type MyThirdType = s9;
+
+type MyArrayType1 = u31[8];
+type MyArrayType2 = u31[CONST_1];
+type MyArrayType3 = MySignedType[CONST_1];
+type MyArrayType4 = s8[CONST_1];
+type MyArrayType5 = bits[1];
+
+type MyFirstTuple = (u7, s8, MyType, MySignedType, MyArrayType1, MyArrayType2);
+)";
+
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "my_module", &import_data));
+  XLS_ASSERT_OK_AND_ASSIGN(
+      auto result, TranspileToCpp(module.module, &import_data,
+                                  /*additional_include_headers=*/{},
+                                  "fake_path.h", "robs::secret::space"));
+  ExpectEqualToGoldenFiles(result);
+}
+
+TEST(CppTranspilerTest, BasicStruct) {
+  const std::string kModule = R"(
+struct MyStruct {
+  x: u32,
+  y: u15,
+  z: u8,
+  w: s63,
+  result: u1,
+  result__: u1,
+  result_: u1,
+})";
+
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "my_module", &import_data));
+  XLS_ASSERT_OK_AND_ASSIGN(
+      auto result,
+      TranspileToCpp(module.module, &import_data,
+                     /*additional_include_headers=*/{}, "fake_path.h"));
+  ExpectEqualToGoldenFiles(result);
+}
+
+TEST(CppTranspilerTest, BasicArray) {
+  constexpr std::string_view kModule = R"(
+struct MyStruct {
+  x: u32[32],
+  y: s7[8],
+  z: u8[7],
+})";
+
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "my_module", &import_data));
+  XLS_ASSERT_OK_AND_ASSIGN(
+      auto result,
+      TranspileToCpp(module.module, &import_data,
+                     /*additional_include_headers=*/{}, "fake_path.h"));
+  ExpectEqualToGoldenFiles(result);
+}
+
+TEST(CppTranspilerTest, StructWithStruct) {
+  constexpr std::string_view kModule = R"(
+struct InnerStruct {
+  x: u32,
+  y: u16
+}
+
+struct OuterStruct {
+  x: u32,
+  a: InnerStruct,
+  b: InnerStruct
+})";
+
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "my_module", &import_data));
+  XLS_ASSERT_OK_AND_ASSIGN(
+      auto result,
+      TranspileToCpp(module.module, &import_data,
+                     /*additional_include_headers=*/{}, "fake_path.h"));
+  ExpectEqualToGoldenFiles(result);
+}
+
+TEST(CppTranspilerTest, StructWithStructWithStruct) {
+  constexpr std::string_view kModule = R"(
+struct InnerStruct {
+  x: u32,
+  y: u16
+}
+
+struct MiddleStruct {
+  z: u48,
+  a: InnerStruct,
+}
+
+struct OtherMiddleStruct {
+  b: InnerStruct,
+  w: u64,
+}
+
+struct OuterStruct {
+  a: InnerStruct,
+  b: MiddleStruct,
+  c: OtherMiddleStruct,
+  v: u8,
+})";
+
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "my_module", &import_data));
+  XLS_ASSERT_OK_AND_ASSIGN(
+      auto result,
+      TranspileToCpp(module.module, &import_data,
+                     /*additional_include_headers=*/{}, "fake_path.h"));
+  ExpectEqualToGoldenFiles(result);
+}
+
+TEST(CppTranspilerTest, HandlesAbsolutePaths) {
+  const std::string kModule = R"(
+pub enum MyEnum : u34 {
+  A = 0,
+  B = 1,
+  C = 42,
+  // D = 4294967296,
+  E = 4294967295
+}
+)";
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "my_module", &import_data));
+  XLS_ASSERT_OK_AND_ASSIGN(
+      auto result,
+      TranspileToCpp(module.module, &import_data,
+                     /*additional_include_headers=*/{}, "/tmp/fake_path.h"));
+  ExpectEqualToGoldenFiles(result);
+}
+
+TEST(CppTranspilerTest, StructWithTuples) {
+  constexpr std::string_view kModule = R"(
+struct Foo {
+    a: (u32, u32),
+}
+)";
+
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "my_module", &import_data));
+  XLS_ASSERT_OK_AND_ASSIGN(
+      auto result,
+      TranspileToCpp(module.module, &import_data,
+                     /*additional_include_headers=*/{}, "/tmp/fake_path.h"));
+  ExpectEqualToGoldenFiles(result);
+}
+
+TEST(CppTranspilerTest, ArrayOfTyperefs) {
+  constexpr std::string_view kModule = R"(
+struct Foo {
+    a: u32,
+    b: u64,
+}
+
+struct Bar {
+    c: Foo[2],
+}
+)";
+
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "my_module", &import_data));
+  XLS_ASSERT_OK_AND_ASSIGN(
+      auto result,
+      TranspileToCpp(module.module, &import_data,
+                     /*additional_include_headers=*/{}, "/tmp/fake_path.h"));
+  ExpectEqualToGoldenFiles(result);
+}
+
+TEST(CppTranspilerTest, UnsupportedS1) {
+  constexpr std::string_view kModule = R"(
+type MyUnsupportedSignedBit = s1;
+)";
+
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "my_module", &import_data));
+  EXPECT_THAT(
+      TranspileToCpp(module.module, &import_data,
+                     /*additional_include_headers=*/{}, "/tmp/fake_path.h"),
+      StatusIs(absl::StatusCode::kUnimplemented,
+               HasSubstr("Signed one-bit numbers are not supported")));
+}
+
+TEST(CppTranspilerTest, WideTypes) {
+  constexpr std::string_view kModule = R"(
+type MyWideAlias = sN[123];
+
+// NB This is not supported yet
+// https://github.com/google/xls/issues/1135
+enum MyUnsupportedWideEnum : uN[555] {
+  A = 0,
+  B = 1,
+}
+
+struct MyWideStruct {
+  wide_field: bits[100],
+}
+)";
+
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "my_module", &import_data));
+  XLS_ASSERT_OK_AND_ASSIGN(
+      auto result,
+      TranspileToCpp(module.module, &import_data,
+                     /*additional_include_headers=*/{}, "/tmp/fake_path.h"));
+  EXPECT_THAT(result.header,
+              HasSubstr("using MyWideAlias = std::bitset<123>;"));
+  EXPECT_THAT(result.header, HasSubstr("std::bitset<100> wide_field"));
+  EXPECT_THAT(result.header, HasSubstr("std::bitset<100> wide_field"));
+  EXPECT_THAT(result.header,
+              HasSubstr("enum class MyUnsupportedWideEnum : uint64_t"));
+}
+
+TEST(CppTranspilerTest, ParentNamespaceSpecified) {
+  constexpr std::string_view kModule = R"(
+type Foo = u32;
+)";
+
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "baz", &import_data));
+  XLS_ASSERT_OK_AND_ASSIGN(
+      auto result,
+      TranspileToCpp(module.module, &import_data,
+                     /*additional_include_headers=*/{}, "/tmp/fake_path.h",
+                     /*namespaces=*/"foo::bar"));
+  EXPECT_THAT(result.header, HasSubstr("namespace foo::bar::baz"));
+  ASSERT_EQ(result.source.size(), 1);
+  EXPECT_THAT(result.source[0], HasSubstr("namespace foo::bar::baz"));
+}
+
+TEST(CppTranspilerTest, DslxModuleNameIsCppKeyword) {
+  constexpr std::string_view kModule = R"(
+type Foo = u32;
+)";
+
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "namespace", &import_data));
+  XLS_ASSERT_OK_AND_ASSIGN(
+      auto result,
+      TranspileToCpp(module.module, &import_data,
+                     /*additional_include_headers=*/{}, "/tmp/fake_path.h"));
+  EXPECT_THAT(result.header, HasSubstr("namespace _namespace"));
+  ASSERT_EQ(result.source.size(), 1);
+  EXPECT_THAT(result.source[0], HasSubstr("namespace _namespace"));
+}
+
+TEST(CppTranspilerTest, DslxModuleNameIsWellKnownNamespace) {
+  constexpr std::string_view kModule = R"(
+type Foo = u32;
+)";
+
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "std", &import_data));
+  XLS_ASSERT_OK_AND_ASSIGN(
+      auto result,
+      TranspileToCpp(module.module, &import_data,
+                     /*additional_include_headers=*/{}, "/tmp/fake_path.h"));
+  EXPECT_THAT(result.header, HasSubstr("namespace _std"));
+  ASSERT_EQ(result.source.size(), 1);
+  EXPECT_THAT(result.source[0], HasSubstr("namespace _std"));
+}
+
+TEST(CppTranspilerTest, DepHeadersIncluded) {
+  constexpr std::string_view kModule = R"(
+type Foo = u32;
+)";
+
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "my_module", &import_data));
+  XLS_ASSERT_OK_AND_ASSIGN(
+      auto result,
+      TranspileToCpp(module.module, &import_data,
+                     /*additional_include_headers=*/
+                     {"path/to/some_types.h", "path/to/other_types.h"},
+                     "/tmp/fake_path.h"));
+  EXPECT_THAT(result.header, HasSubstr("#include \"path/to/some_types.h\"\n"
+                                       "#include \"path/to/other_types.h\"\n"));
+  ASSERT_EQ(result.source.size(), 1);
+  EXPECT_THAT(result.source[0],
+              HasSubstr("#include \"/tmp/fake_path.h\"\n"
+                        "#include \"path/to/some_types.h\"\n"
+                        "#include \"path/to/other_types.h\"\n"));
+}
+
+TEST(CppTranspilerTest, ShardedSource) {
+  constexpr std::string_view kModule = R"(
+type Foo = u32;
+type Bar = u32;
+)";
+
+  auto import_data = CreateImportDataForTest();
+  XLS_ASSERT_OK_AND_ASSIGN(
+      TypecheckedModule module,
+      ParseAndTypecheck(kModule, "fake_path", "my_module", &import_data));
+  XLS_ASSERT_OK_AND_ASSIGN(
+      auto result,
+      TranspileToCpp(module.module, &import_data,
+                     /*additional_include_headers=*/
+                     {"path/to/some_types.h", "path/to/other_types.h"},
+                     "/tmp/fake_path.h"));
+  EXPECT_THAT(result.header, HasSubstr("#include \"path/to/some_types.h\"\n"
+                                       "#include \"path/to/other_types.h\"\n"));
+  ASSERT_EQ(result.source.size(), 2);
+  EXPECT_THAT(result.source[0],
+              HasSubstr("#include \"/tmp/fake_path.h\"\n"
+                        "#include \"path/to/some_types.h\"\n"
+                        "#include \"path/to/other_types.h\"\n"));
+  EXPECT_THAT(result.source[1],
+              HasSubstr("#include \"/tmp/fake_path.h\"\n"
+                        "#include \"path/to/some_types.h\"\n"
+                        "#include \"path/to/other_types.h\"\n"));
+}
+
+}  // namespace
+}  // namespace xls::dslx

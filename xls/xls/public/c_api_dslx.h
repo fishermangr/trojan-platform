@@ -1,0 +1,765 @@
+// Copyright 2024 The XLS Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// DSLX (Domain Specific Language "X") APIs
+//
+// Note that these are expected to be *less* stable than other public C APIs,
+// as they are exposing a useful implementation library present within XLS.
+//
+// Per usual, in a general sense, no promises are made around API or ABI
+// stability overall. However, seems worth noting these are effectively
+// "protected" APIs, use with particular caution around stability. See
+// `xls/protected/BUILD` for how we tend to think about "protected" APIs in the
+// project.
+
+#ifndef XLS_PUBLIC_C_API_DSLX_H_
+#define XLS_PUBLIC_C_API_DSLX_H_
+
+#include <stddef.h>  // NOLINT(modernize-deprecated-headers)
+#include <stdint.h>  // NOLINT(modernize-deprecated-headers)
+
+extern "C" {
+
+typedef int32_t xls_dslx_type_definition_kind;
+enum {
+  xls_dslx_type_definition_kind_type_alias,
+  xls_dslx_type_definition_kind_struct_def,
+  xls_dslx_type_definition_kind_enum_def,
+  xls_dslx_type_definition_kind_colon_ref,
+  xls_dslx_type_definition_kind_proc_def,
+  xls_dslx_type_definition_kind_use_tree_entry,
+};
+
+typedef int32_t xls_dslx_module_member_kind;
+enum {
+  xls_dslx_module_member_kind_function,
+  xls_dslx_module_member_kind_proc,
+  xls_dslx_module_member_kind_test_function,
+  xls_dslx_module_member_kind_test_proc,
+  xls_dslx_module_member_kind_quick_check,
+  xls_dslx_module_member_kind_type_alias,
+  xls_dslx_module_member_kind_struct_def,
+  xls_dslx_module_member_kind_proc_def,
+  xls_dslx_module_member_kind_enum_def,
+  xls_dslx_module_member_kind_constant_def,
+  xls_dslx_module_member_kind_import,
+  xls_dslx_module_member_kind_const_assert,
+  xls_dslx_module_member_kind_impl,
+  xls_dslx_module_member_kind_trait,
+  xls_dslx_module_member_kind_verbatim_node,
+  xls_dslx_module_member_kind_use,
+  xls_dslx_module_member_kind_proc_alias,
+};
+
+typedef int32_t xls_dslx_attribute_kind;
+enum {
+  xls_dslx_attribute_kind_cfg,
+  xls_dslx_attribute_kind_dslx_format_disable,
+  xls_dslx_attribute_kind_extern_verilog,
+  xls_dslx_attribute_kind_sv_type,
+  xls_dslx_attribute_kind_test,
+  xls_dslx_attribute_kind_test_proc,
+  xls_dslx_attribute_kind_quickcheck,
+};
+
+typedef int32_t xls_dslx_attribute_argument_kind;
+enum {
+  xls_dslx_attribute_argument_kind_string,
+  xls_dslx_attribute_argument_kind_string_key_value,
+  xls_dslx_attribute_argument_kind_int_key_value,
+  xls_dslx_attribute_argument_kind_string_literal,
+};
+
+// Opaque structs.
+struct xls_dslx_typechecked_module;
+struct xls_dslx_import_data;
+struct xls_dslx_module;
+struct xls_dslx_type_definition;
+struct xls_dslx_struct_def;
+struct xls_dslx_enum_def;
+struct xls_dslx_type_alias;
+struct xls_dslx_type_info;
+struct xls_dslx_type;
+struct xls_dslx_type_annotation;
+struct xls_dslx_constant_def;
+struct xls_dslx_function;
+struct xls_dslx_quickcheck;
+struct xls_dslx_function;
+struct xls_dslx_param;
+struct xls_dslx_parametric_binding;
+struct xls_dslx_expr;
+struct xls_dslx_invocation;
+struct xls_dslx_invocation_callee_data;
+struct xls_dslx_invocation_callee_data_array;
+struct xls_dslx_invocation_data;
+struct xls_dslx_module_member;
+struct xls_dslx_type_dim;
+struct xls_dslx_parametric_env;
+struct xls_dslx_interp_value;
+struct xls_bits;
+struct xls_dslx_call_graph;
+struct xls_dslx_attribute;
+
+// Rule for rewriting invocations in bulk API.
+struct xls_dslx_invocation_rewrite_rule {
+  // Replace invocations whose resolved callee is exactly this function.
+  struct xls_dslx_function* from_callee;
+  // The function that should be used as the new callee.
+  struct xls_dslx_function* to_callee;
+  // Optional filter: only invocations whose callee-side ParametricEnv equals
+  // this value will be replaced. If null, matches all instantiations.
+  const struct xls_dslx_parametric_env* match_callee_env;  // optional
+  // Optional explicit env for the replacement callee. If null, retains the
+  // original invocation's explicit parametrics. If non-null but empty, emits
+  // no explicit parametrics (rely on deduction).
+  const struct xls_dslx_parametric_env* to_callee_env;  // optional
+};
+
+struct xls_dslx_parametric_env_item {
+  const char* identifier;
+  const struct xls_dslx_interp_value* value;
+};
+
+struct xls_dslx_function_specialization_request {
+  const char* function_name;
+  const char* specialized_name;
+  const struct xls_dslx_parametric_env* env;  // Optional; may be null.
+};
+
+// Creates a parametric environment from items.
+bool xls_dslx_parametric_env_create(
+    const struct xls_dslx_parametric_env_item* items, size_t items_count,
+    char** error_out, struct xls_dslx_parametric_env** env_out);
+
+// Clones an existing parametric environment.
+struct xls_dslx_parametric_env* xls_dslx_parametric_env_clone(
+    const struct xls_dslx_parametric_env* env);
+
+// Returns whether the given parametric environments are equal.
+bool xls_dslx_parametric_env_equals(const struct xls_dslx_parametric_env* lhs,
+                                    const struct xls_dslx_parametric_env* rhs);
+
+// Returns true if lhs is lexicographically less than rhs.
+bool xls_dslx_parametric_env_less_than(
+    const struct xls_dslx_parametric_env* lhs,
+    const struct xls_dslx_parametric_env* rhs);
+
+// Computes a 64-bit hash value for the given parametric environment.
+uint64_t xls_dslx_parametric_env_hash(
+    const struct xls_dslx_parametric_env* env);
+
+// Returns a newly allocated string describing the parametric environment.
+char* xls_dslx_parametric_env_to_string(
+    const struct xls_dslx_parametric_env* env);
+
+// Frees a previously created parametric environment.
+void xls_dslx_parametric_env_free(struct xls_dslx_parametric_env*);
+
+// Returns the number of bindings contained in the parametric environment.
+int64_t xls_dslx_parametric_env_get_binding_count(
+    const struct xls_dslx_parametric_env* env);
+
+// Returns the identifier of the binding at `index`.
+const char* xls_dslx_parametric_env_get_binding_identifier(
+    const struct xls_dslx_parametric_env* env, int64_t index);
+
+// Returns the value of the binding at `index`.
+struct xls_dslx_interp_value* xls_dslx_parametric_env_get_binding_value(
+    const struct xls_dslx_parametric_env* env, int64_t index);
+
+// InterpValue constructors.
+struct xls_dslx_interp_value* xls_dslx_interp_value_make_ubits(
+    int64_t bit_count, uint64_t value);
+struct xls_dslx_interp_value* xls_dslx_interp_value_make_sbits(
+    int64_t bit_count, int64_t value);
+
+// Constructs an enum InterpValue given an enum def and the underlying bits.
+bool xls_dslx_interp_value_make_enum(struct xls_dslx_enum_def* def,
+                                     bool is_signed,
+                                     const struct xls_bits* bits,
+                                     char** error_out,
+                                     struct xls_dslx_interp_value** result_out);
+
+// Constructs a tuple InterpValue from elements.
+bool xls_dslx_interp_value_make_tuple(
+    size_t element_count, struct xls_dslx_interp_value** elements,
+    char** error_out, struct xls_dslx_interp_value** result_out);
+
+// Constructs an array InterpValue from elements of the same type.
+bool xls_dslx_interp_value_make_array(
+    size_t element_count, struct xls_dslx_interp_value** elements,
+    char** error_out, struct xls_dslx_interp_value** result_out);
+
+// Clones an InterpValue.
+struct xls_dslx_interp_value* xls_dslx_interp_value_clone(
+    const struct xls_dslx_interp_value* value);
+
+// Parses an InterpValue from DSLX text using the parser/evaluator.
+bool xls_dslx_interp_value_from_string(
+    const char* text, const char* dslx_stdlib_path, char** error_out,
+    struct xls_dslx_interp_value** result_out);
+
+struct xls_dslx_import_data* xls_dslx_import_data_create(
+    const char* dslx_stdlib_path, const char* additional_search_paths[],
+    size_t additional_search_paths_count);
+
+void xls_dslx_import_data_free(struct xls_dslx_import_data*);
+
+bool xls_dslx_parse_and_typecheck(
+    const char* text, const char* path, const char* module_name,
+    struct xls_dslx_import_data* import_data, char** error_out,
+    struct xls_dslx_typechecked_module** result_out);
+
+bool xls_dslx_typechecked_module_clone_removing_functions(
+    struct xls_dslx_typechecked_module* tm,
+    struct xls_dslx_function* functions[], size_t function_count,
+    const char* install_subject, struct xls_dslx_import_data* import_data,
+    char** error_out, struct xls_dslx_typechecked_module** result_out);
+
+bool xls_dslx_typechecked_module_clone_removing_members(
+    struct xls_dslx_typechecked_module* tm,
+    struct xls_dslx_module_member* members[], size_t member_count,
+    const char* install_subject, struct xls_dslx_import_data* import_data,
+    char** error_out, struct xls_dslx_typechecked_module** result_out);
+
+void xls_dslx_typechecked_module_free(struct xls_dslx_typechecked_module* tm);
+
+struct xls_dslx_module* xls_dslx_typechecked_module_get_module(
+    struct xls_dslx_typechecked_module*);
+struct xls_dslx_type_info* xls_dslx_typechecked_module_get_type_info(
+    struct xls_dslx_typechecked_module*);
+
+// Returns the imported TypeInfo associated with the given module if present
+// within the import graph rooted at `type_info`; otherwise returns nullptr.
+struct xls_dslx_type_info* xls_dslx_type_info_get_imported_type_info(
+    struct xls_dslx_type_info* type_info, struct xls_dslx_module* module);
+
+int64_t xls_dslx_module_get_member_count(struct xls_dslx_module*);
+
+struct xls_dslx_module_member* xls_dslx_module_get_member(
+    struct xls_dslx_module*, int64_t);
+
+xls_dslx_module_member_kind xls_dslx_module_member_get_kind(
+    struct xls_dslx_module_member*);
+
+struct xls_dslx_constant_def* xls_dslx_module_member_get_constant_def(
+    struct xls_dslx_module_member*);
+
+struct xls_dslx_struct_def* xls_dslx_module_member_get_struct_def(
+    struct xls_dslx_module_member*);
+
+struct xls_dslx_enum_def* xls_dslx_module_member_get_enum_def(
+    struct xls_dslx_module_member*);
+
+struct xls_dslx_type_alias* xls_dslx_module_member_get_type_alias(
+    struct xls_dslx_module_member*);
+
+// Returns the function AST node from the given module member if it is a
+// function; otherwise returns nullptr.
+struct xls_dslx_function* xls_dslx_module_member_get_function(
+    struct xls_dslx_module_member*);
+
+// Returns the QuickCheck AST node from the given module member. The caller
+// should ensure the module member kind is
+// `xls_dslx_module_member_kind_quick_check`.
+struct xls_dslx_quickcheck* xls_dslx_module_member_get_quickcheck(
+    struct xls_dslx_module_member*);
+
+struct xls_dslx_module_member* xls_dslx_module_member_from_constant_def(
+    struct xls_dslx_constant_def* constant_def);
+
+struct xls_dslx_module_member* xls_dslx_module_member_from_struct_def(
+    struct xls_dslx_struct_def* struct_def);
+
+struct xls_dslx_module_member* xls_dslx_module_member_from_enum_def(
+    struct xls_dslx_enum_def* enum_def);
+
+struct xls_dslx_module_member* xls_dslx_module_member_from_type_alias(
+    struct xls_dslx_type_alias* type_alias);
+
+struct xls_dslx_module_member* xls_dslx_module_member_from_function(
+    struct xls_dslx_function* function);
+
+struct xls_dslx_module_member* xls_dslx_module_member_from_quickcheck(
+    struct xls_dslx_quickcheck* quickcheck);
+
+// Returns whether the given DSLX function is parametric.
+bool xls_dslx_function_is_parametric(struct xls_dslx_function*);
+
+// Returns whether the given DSLX function is declared `pub`.
+bool xls_dslx_function_is_public(struct xls_dslx_function*);
+
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_function_get_identifier(struct xls_dslx_function*);
+
+// Returns the number of parameters for the given DSLX function.
+int64_t xls_dslx_function_get_param_count(struct xls_dslx_function* fn);
+
+// Returns the number of parametric bindings declared by the given DSLX
+// function.
+int64_t xls_dslx_function_get_parametric_binding_count(
+    struct xls_dslx_function* fn);
+
+// Returns the i-th parameter of the given DSLX function.
+// The returned pointer is borrowed and tied to the lifetime of the underlying
+// function/module objects.
+struct xls_dslx_param* xls_dslx_function_get_param(struct xls_dslx_function* fn,
+                                                   int64_t index);
+
+// Returns the i-th parametric binding of the given DSLX function.
+// The returned pointer is borrowed and tied to the lifetime of the underlying
+// function/module objects.
+struct xls_dslx_parametric_binding* xls_dslx_function_get_parametric_binding(
+    struct xls_dslx_function* fn, int64_t index);
+
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_param_get_name(struct xls_dslx_param* p);
+
+// Returns the syntactic type annotation of this parameter as written in the
+// DSLX source.
+struct xls_dslx_type_annotation* xls_dslx_param_get_type_annotation(
+    struct xls_dslx_param* p);
+
+// Returns the function body as an expression (statement block).
+struct xls_dslx_expr* xls_dslx_function_get_body(struct xls_dslx_function* fn);
+
+// Returns the return-type annotation for the given function, or nullptr if none
+// was written in the source.
+struct xls_dslx_type_annotation* xls_dslx_function_get_return_type(
+    struct xls_dslx_function* fn);
+
+// Returns the number of attributes attached to the function.
+int64_t xls_dslx_function_get_attribute_count(struct xls_dslx_function* fn);
+
+// Returns the attribute at the given index.
+// The returned pointer is borrowed and tied to the lifetime of the underlying
+// function/module objects.
+struct xls_dslx_attribute* xls_dslx_function_get_attribute(
+    struct xls_dslx_function* fn, int64_t index);
+
+// Returns the attribute kind.
+xls_dslx_attribute_kind xls_dslx_attribute_get_kind(
+    struct xls_dslx_attribute* attribute);
+
+// Returns the number of arguments carried by the attribute.
+int64_t xls_dslx_attribute_get_argument_count(
+    struct xls_dslx_attribute* attribute);
+
+// Returns the kind of the attribute argument at `index`.
+xls_dslx_attribute_argument_kind xls_dslx_attribute_get_argument_kind(
+    struct xls_dslx_attribute* attribute, int64_t index);
+
+// Returns the argument value when the argument kind is
+// `xls_dslx_attribute_argument_kind_string`.
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_attribute_get_string_argument(
+    struct xls_dslx_attribute* attribute, int64_t index);
+
+// Returns the argument value when the argument kind is
+// `xls_dslx_attribute_argument_kind_string_literal`.
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_attribute_get_string_literal_argument(
+    struct xls_dslx_attribute* attribute, int64_t index);
+
+// Returns the argument key when the argument kind is a key/value variant.
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_attribute_get_key_value_argument_key(
+    struct xls_dslx_attribute* attribute, int64_t index);
+
+// Returns the string value when the argument kind is
+// `xls_dslx_attribute_argument_kind_string_key_value`.
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_attribute_get_key_value_string_argument_value(
+    struct xls_dslx_attribute* attribute, int64_t index);
+
+// Returns the integer value when the argument kind is
+// `xls_dslx_attribute_argument_kind_int_key_value`.
+int64_t xls_dslx_attribute_get_key_value_int_argument_value(
+    struct xls_dslx_attribute* attribute, int64_t index);
+
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_attribute_to_string(struct xls_dslx_attribute* attribute);
+
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_parametric_binding_get_identifier(
+    struct xls_dslx_parametric_binding* binding);
+
+struct xls_dslx_type_annotation*
+xls_dslx_parametric_binding_get_type_annotation(
+    struct xls_dslx_parametric_binding* binding);
+
+struct xls_dslx_expr* xls_dslx_parametric_binding_get_expr(
+    struct xls_dslx_parametric_binding* binding);
+
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_function_to_string(struct xls_dslx_function* fn);
+
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_expr_to_string(struct xls_dslx_expr* expr);
+
+// -- call_graph
+
+bool xls_dslx_type_info_build_function_call_graph(
+    struct xls_dslx_type_info* type_info, char** error_out,
+    struct xls_dslx_call_graph** result_out);
+
+void xls_dslx_call_graph_free(struct xls_dslx_call_graph* call_graph);
+
+int64_t xls_dslx_call_graph_get_function_count(
+    struct xls_dslx_call_graph* call_graph);
+
+struct xls_dslx_function* xls_dslx_call_graph_get_function(
+    struct xls_dslx_call_graph* call_graph, int64_t index);
+
+int64_t xls_dslx_call_graph_get_callee_count(
+    struct xls_dslx_call_graph* call_graph, struct xls_dslx_function* caller);
+
+struct xls_dslx_function* xls_dslx_call_graph_get_callee_function(
+    struct xls_dslx_call_graph* call_graph, struct xls_dslx_function* caller,
+    int64_t callee_index);
+
+// Specializes each requested function within `typechecked_module`, producing a
+// cloned module that is re-typechecked and installed into `import_data` under
+// `install_subject`. On success, `*result_out` receives the new module.
+bool xls_dslx_typechecked_module_insert_function_specializations(
+    struct xls_dslx_typechecked_module* typechecked_module,
+    const struct xls_dslx_function_specialization_request* requests,
+    size_t request_count, struct xls_dslx_import_data* import_data,
+    const char* install_subject, char** error_out,
+    struct xls_dslx_typechecked_module** result_out);
+
+// Retrieves the underlying function associated with the given QuickCheck.
+struct xls_dslx_function* xls_dslx_quickcheck_get_function(
+    struct xls_dslx_quickcheck*);
+
+// Returns true iff the QuickCheck has the `exhaustive` test-cases specifier.
+bool xls_dslx_quickcheck_is_exhaustive(struct xls_dslx_quickcheck*);
+
+// Retrieves the test-case count for the QuickCheck. Returns true and sets
+// `*result_out` when the QuickCheck has a counted test-case specifier; returns
+// false when the QuickCheck is marked exhaustive (in which case
+// `*result_out` is not modified).
+bool xls_dslx_quickcheck_get_count(struct xls_dslx_quickcheck*,
+                                   int64_t* result_out);
+
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_quickcheck_to_string(struct xls_dslx_quickcheck*);
+
+int64_t xls_dslx_module_get_type_definition_count(
+    struct xls_dslx_module* module);
+
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_module_get_name(struct xls_dslx_module*);
+
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_module_to_string(struct xls_dslx_module* module);
+
+xls_dslx_type_definition_kind xls_dslx_module_get_type_definition_kind(
+    struct xls_dslx_module* module, int64_t i);
+
+struct xls_dslx_struct_def* xls_dslx_module_get_type_definition_as_struct_def(
+    struct xls_dslx_module* module, int64_t i);
+
+struct xls_dslx_enum_def* xls_dslx_module_get_type_definition_as_enum_def(
+    struct xls_dslx_module* module, int64_t i);
+
+struct xls_dslx_type_alias* xls_dslx_module_get_type_definition_as_type_alias(
+    struct xls_dslx_module* module, int64_t i);
+
+// -- type_definition
+
+struct xls_dslx_colon_ref* xls_dslx_type_defintion_get_colon_ref(
+    struct xls_dslx_type_definition*);
+struct xls_dslx_type_alias* xls_dslx_type_definition_get_type_alias(
+    struct xls_dslx_type_definition*);
+
+// -- constant_def
+
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_constant_def_get_name(struct xls_dslx_constant_def*);
+
+struct xls_dslx_expr* xls_dslx_constant_def_get_value(
+    struct xls_dslx_constant_def*);
+
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_constant_def_to_string(struct xls_dslx_constant_def*);
+
+// -- struct_def
+
+// Note: the return value is owned by the caller and must be freed via
+// `xls_c_str_free`.
+char* xls_dslx_struct_def_get_identifier(struct xls_dslx_struct_def*);
+
+bool xls_dslx_struct_def_is_parametric(struct xls_dslx_struct_def*);
+int64_t xls_dslx_struct_def_get_member_count(struct xls_dslx_struct_def*);
+
+struct xls_dslx_struct_member* xls_dslx_struct_def_get_member(
+    struct xls_dslx_struct_def*, int64_t);
+
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_struct_member_get_name(struct xls_dslx_struct_member*);
+
+struct xls_dslx_type_annotation* xls_dslx_struct_member_get_type(
+    struct xls_dslx_struct_member*);
+
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_struct_def_to_string(struct xls_dslx_struct_def*);
+
+// -- enum_def (AST node)
+
+// Note: the return value is owned by the caller and must be freed via
+// `xls_c_str_free`.
+char* xls_dslx_enum_def_get_identifier(struct xls_dslx_enum_def*);
+
+int64_t xls_dslx_enum_def_get_member_count(struct xls_dslx_enum_def*);
+
+struct xls_dslx_enum_member* xls_dslx_enum_def_get_member(
+    struct xls_dslx_enum_def*, int64_t);
+
+struct xls_dslx_type_annotation* xls_dslx_enum_def_get_underlying(
+    struct xls_dslx_enum_def*);
+
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_enum_member_get_name(struct xls_dslx_enum_member*);
+
+struct xls_dslx_expr* xls_dslx_enum_member_get_value(
+    struct xls_dslx_enum_member*);
+
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_enum_def_to_string(struct xls_dslx_enum_def*);
+
+// Returns the owning module for the given expression AST node.
+struct xls_dslx_module* xls_dslx_expr_get_owner_module(
+    struct xls_dslx_expr* expr);
+
+// -- type_annotation
+
+// Attempts to convert the given type annotation to a TypeRefTypeAnnotation --
+// returns nullptr if the conversion is not viable.
+struct xls_dslx_type_ref_type_annotation*
+xls_dslx_type_annotation_get_type_ref_type_annotation(
+    struct xls_dslx_type_annotation*);
+
+// -- type_ref_type_annotation
+
+struct xls_dslx_type_ref* xls_dslx_type_ref_type_annotation_get_type_ref(
+    struct xls_dslx_type_ref_type_annotation*);
+
+// -- type_ref
+
+struct xls_dslx_type_definition* xls_dslx_type_ref_get_type_definition(
+    struct xls_dslx_type_ref*);
+
+// -- type_definition
+
+struct xls_dslx_colon_ref* xls_dslx_type_definition_get_colon_ref(
+    struct xls_dslx_type_definition*);
+
+// -- import
+
+int64_t xls_dslx_import_get_subject_count(struct xls_dslx_import*);
+char* xls_dslx_import_get_subject(struct xls_dslx_import*, int64_t);
+
+// -- colon_ref
+
+struct xls_dslx_import* xls_dslx_colon_ref_resolve_import_subject(
+    struct xls_dslx_colon_ref*);
+
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_colon_ref_get_attr(struct xls_dslx_colon_ref*);
+
+// -- type_alias
+
+// Note: the return value is owned by the caller and must be freed via
+// `xls_c_str_free`.
+char* xls_dslx_type_alias_get_identifier(struct xls_dslx_type_alias*);
+
+struct xls_dslx_type_annotation* xls_dslx_type_alias_get_type_annotation(
+    struct xls_dslx_type_alias*);
+
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_type_alias_to_string(struct xls_dslx_type_alias*);
+
+// -- interp_value
+
+// Note: return value is owned by the caller, free via `xls_c_str_free`.
+char* xls_dslx_interp_value_to_string(struct xls_dslx_interp_value*);
+
+bool xls_dslx_interp_value_convert_to_ir(const struct xls_dslx_interp_value* v,
+                                         char** error_out,
+                                         struct xls_value** result_out);
+
+void xls_dslx_interp_value_free(struct xls_dslx_interp_value*);
+
+// -- type_info (deduced type information)
+
+// Note: if there is no type information available for the given entity these
+// may return null; however, if type checking has completed successfully this
+// should not occur in practice.
+
+const struct xls_dslx_type* xls_dslx_type_info_get_type_struct_def(
+    struct xls_dslx_type_info*, struct xls_dslx_struct_def*);
+
+const struct xls_dslx_type* xls_dslx_type_info_get_type_struct_member(
+    struct xls_dslx_type_info*, struct xls_dslx_struct_member*);
+
+const struct xls_dslx_type* xls_dslx_type_info_get_type_enum_def(
+    struct xls_dslx_type_info*, struct xls_dslx_enum_def*);
+
+const struct xls_dslx_type* xls_dslx_type_info_get_type_constant_def(
+    struct xls_dslx_type_info*, struct xls_dslx_constant_def*);
+
+const struct xls_dslx_type* xls_dslx_type_info_get_type_type_annotation(
+    struct xls_dslx_type_info*, struct xls_dslx_type_annotation*);
+
+// Note: the outparam is owned by the caller and must be freed via
+// `xls_dslx_interp_value_free`.
+bool xls_dslx_type_info_get_const_expr(
+    struct xls_dslx_type_info* type_info, struct xls_dslx_expr* expr,
+    char** error_out, struct xls_dslx_interp_value** result_out);
+
+struct xls_dslx_invocation_callee_data_array*
+xls_dslx_type_info_get_unique_invocation_callee_data(
+    struct xls_dslx_type_info* type_info, struct xls_dslx_function* function);
+
+struct xls_dslx_invocation_callee_data_array*
+xls_dslx_type_info_get_all_invocation_callee_data(
+    struct xls_dslx_type_info* type_info, struct xls_dslx_function* function);
+
+struct xls_dslx_invocation_data* xls_dslx_type_info_get_root_invocation_data(
+    struct xls_dslx_type_info* type_info,
+    struct xls_dslx_invocation* invocation);
+
+void xls_dslx_invocation_callee_data_array_free(
+    struct xls_dslx_invocation_callee_data_array* array);
+
+int64_t xls_dslx_invocation_callee_data_array_get_count(
+    struct xls_dslx_invocation_callee_data_array* array);
+
+struct xls_dslx_invocation_callee_data*
+xls_dslx_invocation_callee_data_array_get(
+    struct xls_dslx_invocation_callee_data_array* array, int64_t index);
+
+struct xls_dslx_invocation_callee_data* xls_dslx_invocation_callee_data_clone(
+    struct xls_dslx_invocation_callee_data* data);
+
+void xls_dslx_invocation_callee_data_free(
+    struct xls_dslx_invocation_callee_data* data);
+
+const struct xls_dslx_parametric_env*
+xls_dslx_invocation_callee_data_get_callee_bindings(
+    struct xls_dslx_invocation_callee_data* data);
+
+const struct xls_dslx_parametric_env*
+xls_dslx_invocation_callee_data_get_caller_bindings(
+    struct xls_dslx_invocation_callee_data* data);
+
+struct xls_dslx_type_info*
+xls_dslx_invocation_callee_data_get_derived_type_info(
+    struct xls_dslx_invocation_callee_data* data);
+
+struct xls_dslx_invocation* xls_dslx_invocation_callee_data_get_invocation(
+    struct xls_dslx_invocation_callee_data* data);
+
+struct xls_dslx_invocation* xls_dslx_invocation_data_get_invocation(
+    struct xls_dslx_invocation_data* data);
+
+struct xls_dslx_function* xls_dslx_invocation_data_get_callee(
+    struct xls_dslx_invocation_data* data);
+
+struct xls_dslx_function* xls_dslx_invocation_data_get_caller(
+    struct xls_dslx_invocation_data* data);
+
+// -- type (deduced type information)
+
+bool xls_dslx_type_get_total_bit_count(const struct xls_dslx_type*,
+                                       char** error_out, int64_t* result_out);
+
+// Returns whether the given type is a bits-like type with signedness 'true'.
+bool xls_dslx_type_is_signed_bits(const struct xls_dslx_type*, char** error_out,
+                                  bool* result_out);
+
+bool xls_dslx_type_to_string(const struct xls_dslx_type*, char** error_out,
+                             char** result_out);
+
+// Note: on success the caller owns `is_signed` and `size` and must free them
+// via `xls_dslx_type_dim_free`.
+bool xls_dslx_type_is_bits_like(struct xls_dslx_type*,
+                                struct xls_dslx_type_dim** is_signed,
+                                struct xls_dslx_type_dim** size);
+
+bool xls_dslx_type_is_enum(const struct xls_dslx_type*);
+
+bool xls_dslx_type_is_struct(const struct xls_dslx_type*);
+
+bool xls_dslx_type_is_array(const struct xls_dslx_type*);
+
+// Precondition: xls_dslx_type_is_enum
+struct xls_dslx_enum_def* xls_dslx_type_get_enum_def(struct xls_dslx_type*);
+
+// Precondition: xls_dslx_type_is_struct
+struct xls_dslx_struct_def* xls_dslx_type_get_struct_def(struct xls_dslx_type*);
+
+// Precondition: xls_dslx_type_is_array
+struct xls_dslx_type* xls_dslx_type_array_get_element_type(
+    struct xls_dslx_type*);
+
+// Note: returned xls_dslx_type_dim is owned by the caller and must be
+// deallocated.
+struct xls_dslx_type_dim* xls_dslx_type_array_get_size(struct xls_dslx_type*);
+
+// -- type_dim (deduced type information)
+
+// TODO: https://github.com/google/xls/issues/3661 - remove this when downstream
+// code stops using it.
+[[deprecated("A TypeDim can never be parametric anymore; this returns false.")]]
+bool xls_dslx_type_dim_is_parametric(struct xls_dslx_type_dim*);
+
+// Determines whether `function` requires the implicit-token calling
+// convention. Returns true on success and sets `*result_out` to the answer.
+// On failure (e.g. no information recorded for that function) returns false
+// and populates `*error_out` with a description (caller must free via
+// `xls_c_str_free`).
+bool xls_dslx_type_info_get_requires_implicit_token(
+    struct xls_dslx_type_info* type_info, struct xls_dslx_function* function,
+    char** error_out, bool* result_out);
+
+bool xls_dslx_type_dim_get_as_bool(struct xls_dslx_type_dim*, char** error_out,
+                                   bool* result_out);
+
+bool xls_dslx_type_dim_get_as_int64(struct xls_dslx_type_dim*, char** error_out,
+                                    int64_t* result_out);
+
+void xls_dslx_type_dim_free(struct xls_dslx_type_dim*);
+
+// Precondition: `type` must be an array type.
+struct xls_dslx_type* xls_dslx_type_array_get_element_type(
+    struct xls_dslx_type* type);
+
+struct xls_dslx_type_dim* xls_dslx_type_array_get_size(
+    struct xls_dslx_type* type);
+
+// Rewrites invocations in the given module according to the rules. Returns a
+// new typechecked module installed in the import graph under `install_subject`.
+// On error, returns false and populates error_out (owned by caller).
+bool xls_dslx_replace_invocations_in_module(
+    struct xls_dslx_typechecked_module* tm,
+    struct xls_dslx_function* const callers[], size_t callers_count,
+    const struct xls_dslx_invocation_rewrite_rule* rules, size_t rules_count,
+    struct xls_dslx_import_data* import_data, const char* install_subject,
+    char** error_out, struct xls_dslx_typechecked_module** result_out);
+
+}  // extern "C"
+
+#endif  // XLS_PUBLIC_C_API_DSLX_H_

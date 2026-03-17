@@ -1,0 +1,69 @@
+// Copyright 2020 The XLS Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package xls;
+
+message TimedNodeProto {
+  // Name of the node
+  optional string node = 1;
+
+  // Operation delay in picoseconds the XLS delay
+  // estimator assumes for this node.
+  optional int64 node_delay_ps = 2;
+
+  // Path delay in picosecond as measured from the start of the pipeline stage
+  // (including the delay of the node itself).
+  optional int64 path_delay_ps = 3;
+}
+
+// Holds per-stage scheduling information.
+message StageProto {
+  reserved 2;  // previously un-timed node fields.
+  reserved "nodes";
+
+  // Number (index) of this stage, 0-indexed.
+  optional int32 stage = 1;
+
+  // Names and corresponding time of the [IR] nodes present in this stage.
+  repeated TimedNodeProto timed_nodes = 3;
+}
+
+// Holds the pipeline schedule for a function or proc.
+message PipelineScheduleProto {
+  // The name of the [IR] function matching this schedule.
+  optional string function = 1;
+
+  // The set of stages comprising this schedule.
+  repeated StageProto stages = 2;
+
+  // The minimum possible clock period for the schedule, if computed. This is
+  // purely for tracing purposes.
+  optional int64 min_clock_period_ps = 3;
+
+  // The number of stages in the schedule.
+  optional int64 length = 4;
+}
+
+// Holds pipeline schedules for a subset of functions/procs in a package.
+message PackageScheduleProto {
+  // Map from FunctionBase name to pipeline schedule.
+  map<string, PipelineScheduleProto> schedules = 1;
+
+  // If this is the synchronous schedule (for synchronous proc implementation)
+  // then this map holds the offset of each FunctionBase (indexed by name)
+  // within the synchronous schedule.
+  map<string, int64> synchronous_offsets = 2;
+}

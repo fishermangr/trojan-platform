@@ -1,0 +1,7 @@
+package test
+
+#[initiation_interval(12)]
+top proc example(tkn: token, init={token}) {
+  tkn: token = state_read(state_element=tkn, id=2)
+  next_value.3: () = next_value(param=tkn, value=tkn, id=3)
+}

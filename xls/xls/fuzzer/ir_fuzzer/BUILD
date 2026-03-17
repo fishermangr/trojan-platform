@@ -1,0 +1,340 @@
+# Copyright 2025 The XLS Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("@rules_python//python:proto.bzl", "py_proto_library")
+# Load proto_library
+# cc_proto_library is used in this file
+
+load("//xls/build_rules:py_oss_defs.bzl", "pytype_strict_binary")
+
+package(
+    default_applicable_licenses = ["//:license"],
+    default_visibility = ["//xls:xls_internal"],
+    licenses = ["notice"],  # Apache 2.0
+)
+
+cc_library(
+    name = "ir_fuzz_domain",
+    testonly = True,
+    srcs = ["ir_fuzz_domain.cc"],
+    hdrs = ["ir_fuzz_domain.h"],
+    deps = [
+        ":fuzz_program_cc_proto",
+        ":gen_ir_nodes_pass",
+        ":ir_fuzz_test_library",
+        "//xls/common/fuzzing:fuzztest",
+        "//xls/ir",
+        "//xls/ir:ir_test_base",
+        "//xls/ir:op",
+        "//xls/ir:verifier",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "ir_fuzz_test",
+    srcs = ["ir_fuzz_test.cc"],
+    deps = [
+        ":ir_fuzz_domain",
+        ":ir_fuzz_test_library",
+        "//xls/common:xls_gunit_main",
+        "//xls/common/fuzzing:fuzztest",
+        "//xls/common/status:matchers",
+        "//xls/ir",
+        "//xls/ir:ir_matcher",
+        "//xls/ir:op",
+        "//xls/ir:verifier",
+        "//xls/passes:reassociation_pass",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/strings:str_format",
+        "@googletest//:gtest",
+    ],
+)
+
+proto_library(
+    name = "fuzz_program_proto",
+    srcs = ["fuzz_program.proto"],
+)
+
+proto_library(
+    name = "fuzzer_arg_list_proto",
+    srcs = ["fuzzer_arg_list.proto"],
+    deps = ["//xls/ir:xls_value_proto"],
+)
+
+cc_proto_library(
+    name = "fuzzer_arg_list_cc_proto",
+    deps = [":fuzzer_arg_list_proto"],
+)
+
+py_proto_library(
+    name = "fuzzer_arg_list_py_pb2",
+    deps = [":fuzzer_arg_list_proto"],
+)
+
+pytype_strict_binary(
+    name = "minimize_fuzz_failure",
+    testonly = 1,
+    srcs = ["minimize_fuzz_failure.py"],
+    data = [
+        ":reproducer_to_ir_main",
+        "//xls/dev_tools:check_ir_equivalence_main",
+        "//xls/dev_tools:ir_minimizer_main",
+        "//xls/tools:eval_ir_main",
+        "//xls/tools:opt_main",
+    ],
+    deps = [
+        "//xls/common:runfiles",
+        "@abseil-py//absl:app",
+        "@abseil-py//absl/flags",
+    ],
+)
+
+cc_proto_library(
+    name = "fuzz_program_cc_proto",
+    deps = [":fuzz_program_proto"],
+)
+
+cc_library(
+    name = "gen_ir_nodes_pass",
+    srcs = ["gen_ir_nodes_pass.cc"],
+    hdrs = ["gen_ir_nodes_pass.h"],
+    deps = [
+        ":combine_context_list",
+        ":fuzz_program_cc_proto",
+        ":ir_fuzz_helpers",
+        ":ir_fuzz_visitor",
+        ":ir_node_context_list",
+        "//xls/ir",
+        "//xls/ir:bits",
+        "//xls/ir:function_builder",
+        "//xls/ir:value",
+        "//xls/ir:value_flattening",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_protobuf//:protobuf_lite",
+    ],
+)
+
+cc_library(
+    name = "combine_context_list",
+    srcs = ["combine_context_list.cc"],
+    hdrs = ["combine_context_list.h"],
+    deps = [
+        ":fuzz_program_cc_proto",
+        ":ir_node_context_list",
+        "//xls/ir:function_builder",
+    ],
+)
+
+cc_test(
+    name = "gen_ir_nodes_pass_test",
+    srcs = ["gen_ir_nodes_pass_test.cc"],
+    deps = [
+        ":fuzz_program_cc_proto",
+        ":ir_fuzz_test_library",
+        "//xls/common:xls_gunit_main",
+        "//xls/common/fuzzing:fuzztest",
+        "//xls/common/status:matchers",
+        "//xls/ir",
+        "//xls/ir:bits",
+        "//xls/ir:ir_matcher",
+        "@com_google_absl//absl/strings:str_format",
+        "@googletest//:gtest",
+    ],
+)
+
+cc_library(
+    name = "ir_fuzz_visitor",
+    srcs = ["ir_fuzz_visitor.cc"],
+    hdrs = ["ir_fuzz_visitor.h"],
+    deps = [":fuzz_program_cc_proto"],
+)
+
+cc_library(
+    name = "ir_fuzz_helpers",
+    srcs = ["ir_fuzz_helpers.cc"],
+    hdrs = ["ir_fuzz_helpers.h"],
+    deps = [
+        ":fuzz_program_cc_proto",
+        "//xls/ir",
+        "//xls/ir:bits",
+        "//xls/ir:bits_ops",
+        "//xls/ir:function_builder",
+        "//xls/ir:type",
+        "//xls/ir:value",
+        "//xls/ir:value_flattening",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "ir_fuzz_helpers_test",
+    srcs = ["ir_fuzz_helpers_test.cc"],
+    deps = [
+        ":fuzz_program_cc_proto",
+        ":ir_fuzz_helpers",
+        "//xls/common:xls_gunit_main",
+        "//xls/ir:bits",
+        "@com_google_absl//absl/strings:str_format",
+        "@cppitertools",
+        "@googletest//:gtest",
+    ],
+)
+
+cc_library(
+    name = "ir_fuzz_test_library",
+    testonly = True,
+    srcs = ["ir_fuzz_test_library.cc"],
+    hdrs = ["ir_fuzz_test_library.h"],
+    deps = [
+        ":fuzz_program_cc_proto",
+        ":gen_ir_nodes_pass",
+        ":ir_fuzz_helpers",
+        "//xls/common/file:filesystem",
+        "//xls/common/status:matchers",
+        "//xls/common/status:ret_check",
+        "//xls/common/status:status_macros",
+        "//xls/interpreter:ir_interpreter",
+        "//xls/ir",
+        "//xls/ir:bits",
+        "//xls/ir:events",
+        "//xls/ir:function_builder",
+        "//xls/ir:ir_test_base",
+        "//xls/ir:value",
+        "//xls/ir:verifier",
+        "//xls/passes:optimization_pass",
+        "//xls/passes:pass_base",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
+        "@com_google_protobuf//:protobuf",
+        "@googletest//:gtest",
+    ],
+)
+
+cc_library(
+    name = "ir_node_context_list",
+    srcs = ["ir_node_context_list.cc"],
+    hdrs = ["ir_node_context_list.h"],
+    deps = [
+        ":ir_fuzz_helpers",
+        "//xls/ir",
+        "//xls/ir:function_builder",
+    ],
+)
+
+cc_library(
+    name = "query_engine_helpers",
+    testonly = 1,
+    srcs = ["query_engine_helpers.cc"],
+    hdrs = ["query_engine_helpers.h"],
+    deps = [
+        ":ir_fuzz_test_library",
+        "//xls/common/status:matchers",
+        "//xls/common/status:ret_check",
+        "//xls/common/status:status_macros",
+        "//xls/interpreter:evaluator_options",
+        "//xls/interpreter:ir_interpreter",
+        "//xls/interpreter:observer",
+        "//xls/ir",
+        "//xls/ir:value",
+        "//xls/passes:query_engine",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@googletest//:gtest",
+    ],
+)
+
+cc_test(
+    name = "query_engine_helpers_test",
+    srcs = ["query_engine_helpers_test.cc"],
+    deps = [
+        ":ir_fuzz_test_library",
+        ":query_engine_helpers",
+        "//xls/common:xls_gunit_main",
+        "//xls/common/status:matchers",
+        "//xls/ir",
+        "//xls/ir:bits",
+        "//xls/ir:function_builder",
+        "//xls/ir:ir_test_base",
+        "//xls/ir:value",
+        "//xls/passes:stateless_query_engine",
+        "//xls/passes:ternary_query_engine",
+        "@com_google_absl//absl/log:check",
+        "@googletest//:gtest",
+    ],
+)
+
+cc_binary(
+    name = "reproducer_to_ir_main",
+    testonly = 1,
+    srcs = [
+        "reproducer_repo_files.cc",
+        "reproducer_repo_files.h",
+        "reproducer_to_ir_main.cc",
+    ],
+    deps = [
+        ":fuzzer_arg_list_cc_proto",
+        ":reproducer_to_ir",
+        "//xls/common:exit_status",
+        "//xls/common:init_xls",
+        "//xls/common/file:filesystem",
+        "//xls/common/status:ret_check",  # build_cleaner: keep
+        "//xls/common/status:status_macros",
+        "//xls/ir",
+        "//xls/ir:value",
+        "//xls/tests:testvector_cc_proto",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "reproducer_to_ir",
+    testonly = 1,
+    srcs = ["reproducer_to_ir.cc"],
+    hdrs = ["reproducer_to_ir.h"],
+    deps = [
+        ":ir_fuzz_domain",
+        "//xls/common/fuzzing:fuzztest",
+        "//xls/common/status:status_macros",
+        "//xls/ir",
+        "//xls/ir:value",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status:statusor",
+    ],
+)

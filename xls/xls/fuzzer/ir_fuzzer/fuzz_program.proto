@@ -1,0 +1,624 @@
+// Copyright 2025 The XLS Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package xls;
+
+enum FuzzVersion {
+  UNSET_FUZZ_VERSION = 0;
+  BOUND_WITH_MODULO_VERSION = 1;
+}
+
+// This proto is used as a template such that its fields will be randomly
+// populated with values. It contains a list of FuzzOpProtos, where each gets
+// instantiated into a corresponding IR op.
+message FuzzProgramProto {
+  // Specifies how the context list of IR ops will be combined.
+  optional CombineListMethod combine_list_method = 1;
+  // Will generate a list of bytes that may be used to create arguments that are
+  // compatible with the parameters of the function.
+  optional bytes args_bytes = 2;
+  repeated FuzzOpProto fuzz_ops = 3;
+  // Used to specify what sort of optional behavior we want to try to use to
+  // maintain compat with older fuzzed programs.
+  optional FuzzVersion version = 4;
+}
+
+// Specifies the method used to combine the context list of BValues into a
+// single IR object.
+enum CombineListMethod {
+  // Protobuf enums require a default/unset value as a convention. Some
+  // languages prefer to distinguish a default value from a enum that is not
+  // set.
+  UNSET_COMBINE_LIST_METHOD = 0;
+  LAST_ELEMENT_METHOD = 1;
+  TUPLE_LIST_METHOD = 2;
+}
+
+// References an operand on the context list by its index. Multiple same protos
+// exist to explicitly specify the type of operand.
+message OperandIdxProto {
+  optional int64 list_idx = 1;
+}
+message BitsOperandIdxProto {
+  optional int64 list_idx = 1;
+}
+message TupleOperandIdxProto {
+  optional int64 list_idx = 1;
+}
+message ArrayOperandIdxProto {
+  optional int64 list_idx = 1;
+}
+
+// Use of a TypeProto to specify the type of an operand.
+// Note that multiple type protos exist, including FuzzTypeProto, and
+// CoercedTypeProto, because each performs a slightly different function. They
+// are all traversed by the same templated recursive functions.
+// TODO: Consider reusing the existing TypeProto.
+message FuzzTypeProto {
+  oneof type {
+    BitsTypeProto bits = 1;
+    TupleTypeProto tuple = 2;
+    ArrayTypeProto array = 3;
+  }
+}
+message BitsTypeProto {
+  optional int64 bit_width = 1;
+}
+message TupleTypeProto {
+  repeated FuzzTypeProto tuple_elements = 1;
+}
+message ArrayTypeProto {
+  optional int64 array_size = 1;
+  optional FuzzTypeProto array_element = 2;
+}
+
+// CoercedTypeProto is the same as FuzzTypeProto, but also contains coercion
+// information in order to coerce any IR node into the specified type. The type
+// and coercion information is randomly generated together to enforce that every
+// sub-type has a coercion method.
+message CoercedTypeProto {
+  oneof type {
+    BitsCoercedTypeProto bits = 1;
+    TupleCoercedTypeProto tuple = 2;
+    ArrayCoercedTypeProto array = 3;
+  }
+}
+
+// CoercedTypeProtos containing type and coercion method information.
+message BitsCoercedTypeProto {
+  optional int64 bit_width = 1;
+  optional BitsCoercionMethodProto coercion_method = 2;
+}
+message TupleCoercedTypeProto {
+  repeated CoercedTypeProto tuple_elements = 1;
+  optional TupleCoercionMethodProto coercion_method = 2;
+}
+message ArrayCoercedTypeProto {
+  optional int64 array_size = 1;
+  optional CoercedTypeProto array_element = 2;
+  optional ArrayCoercionMethodProto coercion_method = 3;
+}
+
+message CoercionMethodProto {
+  BitsCoercionMethodProto bits = 1;
+  TupleCoercionMethodProto tuple = 2;
+  ArrayCoercionMethodProto array = 3;
+}
+message BitsCoercionMethodProto {
+  optional ChangeBitWidthMethodProto change_bit_width_method = 1;
+}
+message TupleCoercionMethodProto {
+  optional ChangeTupleSizeMethodProto change_tuple_size_method = 1;
+}
+message ArrayCoercionMethodProto {
+  optional ChangeArraySizeMethodProto change_array_size_method = 1;
+}
+
+// Methods used to change the bit width of a bits BValue.
+message ChangeBitWidthMethodProto {
+  optional DecreaseWidthMethod decrease_width_method = 1;
+  optional IncreaseWidthMethod increase_width_method = 2;
+}
+enum DecreaseWidthMethod {
+  UNSET_DECREASE_WIDTH_METHOD = 0;
+  BIT_SLICE_METHOD = 1;
+}
+enum IncreaseWidthMethod {
+  UNSET_INCREASE_WIDTH_METHOD = 0;
+  ZERO_EXTEND_METHOD = 1;
+  SIGN_EXTEND_METHOD = 2;
+}
+
+// Methods used to coerce a tuple to a different sized tuple.
+message ChangeTupleSizeMethodProto {
+  optional DecreaseTupleSizeMethod decrease_size_method = 1;
+  optional IncreaseTupleSizeMethod increase_size_method = 2;
+}
+enum DecreaseTupleSizeMethod {
+  UNSET_DECREASE_TUPLE_SIZE_METHOD = 0;
+  SHRINK_TUPLE_METHOD = 1;
+}
+enum IncreaseTupleSizeMethod {
+  UNSET_INCREASE_TUPLE_SIZE_METHOD = 0;
+  EXPAND_TUPLE_METHOD = 1;
+}
+
+// Methods used to coerce an array to a different sized array.
+message ChangeArraySizeMethodProto {
+  optional DecreaseArraySizeMethod decrease_size_method = 1;
+  optional IncreaseArraySizeMethod increase_size_method = 2;
+}
+enum DecreaseArraySizeMethod {
+  UNSET_DECREASE_ARRAY_SIZE_METHOD = 0;
+  SHRINK_ARRAY_METHOD = 1;
+  ARRAY_SLICE_METHOD = 2;
+}
+enum IncreaseArraySizeMethod {
+  UNSET_INCREASE_ARRAY_SIZE_METHOD = 0;
+  EXPAND_ARRAY_METHOD = 1;
+}
+
+// Each FuzzOpProto represents an IR node. A FuzzOpProto is used as a
+// randomly generated instruction to instantiate an IR operation node.
+message FuzzOpProto {
+  oneof fuzz_op {
+    FuzzParamProto param = 1;
+    FuzzShraProto shra = 2;
+    FuzzShllProto shll = 3;
+    FuzzShrlProto shrl = 4;
+    // Has an "_op" suffix to avoid the "or" keyword in some programming
+    // languages.
+    FuzzOrProto or_op = 5;
+    FuzzNorProto nor = 6;
+    FuzzXorProto xor_op = 7;
+    FuzzAndProto and_op = 8;
+    FuzzNandProto nand = 9;
+    FuzzAndReduceProto and_reduce = 10;
+    FuzzOrReduceProto or_reduce = 11;
+    FuzzXorReduceProto xor_reduce = 12;
+    FuzzUMulProto umul = 13;
+    FuzzSMulProto smul = 14;
+    FuzzUMulpProto umulp = 15;
+    FuzzSMulpProto smulp = 16;
+    FuzzUDivProto udiv = 17;
+    FuzzSDivProto sdiv = 18;
+    FuzzUModProto umod = 19;
+    FuzzSModProto smod = 20;
+    FuzzSubtractProto subtract = 21;
+    FuzzAddProto add = 22;
+    FuzzConcatProto concat = 23;
+    FuzzULeProto ule = 24;
+    FuzzULtProto ult = 25;
+    FuzzUGeProto uge = 26;
+    FuzzUGtProto ugt = 27;
+    FuzzSLeProto sle = 28;
+    FuzzSLtProto slt = 29;
+    FuzzSGeProto sge = 30;
+    FuzzSGtProto sgt = 31;
+    FuzzEqProto eq = 32;
+    FuzzNeProto ne = 33;
+    FuzzNegateProto negate = 34;
+    FuzzNotProto not_op = 35;
+    FuzzLiteralProto literal = 36;
+    FuzzSelectProto select = 37;
+    FuzzOneHotProto one_hot = 38;
+    FuzzOneHotSelectProto one_hot_select = 39;
+    FuzzPrioritySelectProto priority_select = 40;
+    FuzzClzProto clz = 41;
+    FuzzCtzProto ctz = 42;
+    FuzzMatchProto match = 43;
+    FuzzMatchTrueProto match_true = 44;
+    FuzzTupleProto tuple = 45;
+    FuzzArrayProto array = 46;
+    FuzzTupleIndexProto tuple_index = 47;
+    FuzzArrayIndexProto array_index = 48;
+    FuzzArraySliceProto array_slice = 49;
+    FuzzArrayUpdateProto array_update = 50;
+    FuzzArrayConcatProto array_concat = 51;
+    FuzzReverseProto reverse = 52;
+    FuzzIdentityProto identity = 53;
+    FuzzSignExtendProto sign_extend = 54;
+    FuzzZeroExtendProto zero_extend = 55;
+    FuzzBitSliceProto bit_slice = 56;
+    FuzzBitSliceUpdateProto bit_slice_update = 57;
+    FuzzDynamicBitSliceProto dynamic_bit_slice = 58;
+    FuzzEncodeProto encode = 59;
+    FuzzDecodeProto decode = 60;
+    FuzzGateProto gate = 61;
+    FuzzDefineFunctionProto define_function = 62;
+    FuzzInvokeProto invoke = 63;
+  }
+}
+
+// The parameter will be placed on the corresponding context list that
+// represents its type.
+message FuzzParamProto {
+  // Use of FuzzTypeProto to specify the type of the parameter.
+  optional FuzzTypeProto type = 1;
+}
+
+message FuzzShraProto {
+  // Use of idxs which represent an index on the bits context list. These idx
+  // fields suggest that the FuzzOp uses a node on the bits context list as an
+  // operand.
+  optional BitsOperandIdxProto operand_idx = 1;
+  optional BitsOperandIdxProto amount_idx = 2;
+}
+
+message FuzzShrlProto {
+  optional BitsOperandIdxProto operand_idx = 1;
+  optional BitsOperandIdxProto amount_idx = 2;
+}
+
+message FuzzShllProto {
+  optional BitsOperandIdxProto operand_idx = 1;
+  optional BitsOperandIdxProto amount_idx = 2;
+}
+
+message FuzzOrProto {
+  repeated BitsOperandIdxProto operand_idxs = 1;
+  // This FuzzOp requires that the operands are all of the bits type with the
+  // same bit width. So this BitsCoercedTypeProto field is used to specify the
+  // bit width that the operands need to be changed to.
+  optional BitsCoercedTypeProto operands_type = 2;
+}
+
+message FuzzNorProto {
+  repeated BitsOperandIdxProto operand_idxs = 1;
+  optional BitsCoercedTypeProto operands_type = 2;
+}
+
+message FuzzXorProto {
+  repeated BitsOperandIdxProto operand_idxs = 1;
+  optional BitsCoercedTypeProto operands_type = 2;
+}
+
+message FuzzAndProto {
+  repeated BitsOperandIdxProto operand_idxs = 1;
+  optional BitsCoercedTypeProto operands_type = 2;
+}
+
+message FuzzNandProto {
+  repeated BitsOperandIdxProto operand_idxs = 1;
+  optional BitsCoercedTypeProto operands_type = 2;
+}
+
+message FuzzAndReduceProto {
+  optional BitsOperandIdxProto operand_idx = 1;
+}
+
+message FuzzOrReduceProto {
+  optional BitsOperandIdxProto operand_idx = 1;
+}
+
+message FuzzXorReduceProto {
+  optional BitsOperandIdxProto operand_idx = 1;
+}
+
+message FuzzUMulProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional int64 bit_width = 3;
+  // If the bit width is set, then the operands may need to be coerced. But
+  // otherwise they are not coerced.
+  optional BitsCoercedTypeProto operands_type = 4;
+}
+
+message FuzzSMulProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional int64 bit_width = 3;
+  optional BitsCoercedTypeProto operands_type = 4;
+}
+
+message FuzzUMulpProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional int64 bit_width = 3;
+  optional BitsCoercedTypeProto operands_type = 4;
+}
+
+message FuzzSMulpProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional int64 bit_width = 3;
+  optional BitsCoercedTypeProto operands_type = 4;
+}
+
+message FuzzUDivProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional BitsCoercedTypeProto operands_type = 3;
+}
+
+message FuzzSDivProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional BitsCoercedTypeProto operands_type = 3;
+}
+
+message FuzzUModProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional BitsCoercedTypeProto operands_type = 3;
+}
+
+message FuzzSModProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional BitsCoercedTypeProto operands_type = 3;
+}
+
+message FuzzSubtractProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional BitsCoercedTypeProto operands_type = 3;
+}
+
+message FuzzAddProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional BitsCoercedTypeProto operands_type = 3;
+}
+
+message FuzzConcatProto {
+  repeated BitsOperandIdxProto operand_idxs = 1;
+}
+
+message FuzzULeProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional BitsCoercedTypeProto operands_type = 3;
+}
+
+message FuzzULtProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional BitsCoercedTypeProto operands_type = 3;
+}
+
+message FuzzUGeProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional BitsCoercedTypeProto operands_type = 3;
+}
+
+message FuzzUGtProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional BitsCoercedTypeProto operands_type = 3;
+}
+
+message FuzzSLeProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional BitsCoercedTypeProto operands_type = 3;
+}
+
+message FuzzSLtProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional BitsCoercedTypeProto operands_type = 3;
+}
+
+message FuzzSGeProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional BitsCoercedTypeProto operands_type = 3;
+}
+
+message FuzzSGtProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional BitsCoercedTypeProto operands_type = 3;
+}
+
+message FuzzEqProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional BitsCoercedTypeProto operands_type = 3;
+}
+
+message FuzzNeProto {
+  optional BitsOperandIdxProto lhs_idx = 1;
+  optional BitsOperandIdxProto rhs_idx = 2;
+  optional BitsCoercedTypeProto operands_type = 3;
+}
+
+message FuzzNegateProto {
+  optional BitsOperandIdxProto operand_idx = 1;
+}
+
+message FuzzNotProto {
+  optional BitsOperandIdxProto operand_idx = 1;
+}
+
+message FuzzLiteralProto {
+  optional FuzzTypeProto type = 1;
+  // Bytes used to fill the literal with an actual value.
+  optional bytes value_bytes = 2;
+}
+
+message FuzzSelectProto {
+  optional BitsOperandIdxProto selector_idx = 1;
+  // OperandIdxProto retrieves an operand of any type from the combined context
+  // list.
+  repeated OperandIdxProto case_idxs = 2;
+  optional OperandIdxProto default_value_idx = 3;
+  // Specifies the exact type that the cases and default value should be.
+  // CoercedTypeProto contains coercion information to coerce any operand into
+  // the specified type.
+  optional CoercedTypeProto cases_and_default_type = 4;
+}
+
+message FuzzOneHotProto {
+  optional BitsOperandIdxProto operand_idx = 1;
+  // OneHot has a priority enum parameter, which is redeclared in this protobuf
+  // for cross compatibility.
+  enum OneHotPriority {
+    UNSET_ONE_HOT_PRIORITY = 0;
+    LSB_PRIORITY = 1;
+    MSB_PRIORITY = 2;
+  }
+  optional OneHotPriority priority = 2;
+  optional BitsCoercionMethodProto operand_coercion_method = 3;
+}
+
+message FuzzOneHotSelectProto {
+  optional BitsOperandIdxProto selector_idx = 1;
+  repeated OperandIdxProto case_idxs = 2;
+  optional CoercedTypeProto cases_type = 3;
+}
+
+message FuzzPrioritySelectProto {
+  optional BitsOperandIdxProto selector_idx = 1;
+  repeated OperandIdxProto case_idxs = 2;
+  optional OperandIdxProto default_value_idx = 3;
+  optional CoercedTypeProto cases_and_default_type = 4;
+}
+
+message FuzzClzProto {
+  optional BitsOperandIdxProto operand_idx = 1;
+}
+
+message FuzzCtzProto {
+  optional BitsOperandIdxProto operand_idx = 1;
+}
+
+// Corresponds to the Case object in the FunctionBuilder.
+message CaseProto {
+  optional BitsOperandIdxProto clause_idx = 1;
+  optional BitsOperandIdxProto value_idx = 2;
+}
+
+message FuzzMatchProto {
+  optional BitsOperandIdxProto condition_idx = 1;
+  repeated CaseProto case_protos = 2;
+  optional BitsOperandIdxProto default_value_idx = 3;
+  optional BitsCoercedTypeProto operands_type = 4;
+}
+
+message FuzzMatchTrueProto {
+  repeated CaseProto case_protos = 1;
+  optional BitsOperandIdxProto default_value_idx = 2;
+  // Use of BitsCoercionMethodProto instead of BitsCoercedTypeProto because we
+  // may not need a defined bit width to be coerced to.
+  optional BitsCoercionMethodProto operands_coercion_method = 3;
+}
+
+message FuzzTupleProto {
+  repeated OperandIdxProto operand_idxs = 1;
+}
+
+message FuzzArrayProto {
+  repeated OperandIdxProto operand_idxs = 1;
+  optional CoercedTypeProto operands_type = 2;
+}
+
+message FuzzTupleIndexProto {
+  optional TupleOperandIdxProto operand_idx = 1;
+  optional int64 index = 2;
+}
+
+message FuzzArrayIndexProto {
+  optional ArrayOperandIdxProto operand_idx = 1;
+  // TODO: Add support for multiple indices, which requires multi-dimensional
+  // array management.
+  optional BitsOperandIdxProto indices_idx = 2;
+}
+
+message FuzzArraySliceProto {
+  optional ArrayOperandIdxProto operand_idx = 1;
+  optional BitsOperandIdxProto start_idx = 2;
+  optional int64 width = 3;
+}
+
+message FuzzArrayUpdateProto {
+  optional ArrayOperandIdxProto operand_idx = 1;
+  optional OperandIdxProto update_value_idx = 2;
+  optional BitsOperandIdxProto indices_idx = 3;
+  // Coercion information to specify how to coerce the update value into the
+  // specified array element type.
+  optional CoercionMethodProto update_value_coercion_method = 4;
+}
+
+message FuzzArrayConcatProto {
+  repeated ArrayOperandIdxProto operand_idxs = 1;
+  optional CoercedTypeProto element_type = 2;
+}
+
+message FuzzReverseProto {
+  optional BitsOperandIdxProto operand_idx = 1;
+}
+
+message FuzzIdentityProto {
+  optional OperandIdxProto operand_idx = 1;
+}
+
+message FuzzSignExtendProto {
+  optional BitsOperandIdxProto operand_idx = 1;
+  optional int64 bit_width = 2;
+}
+
+message FuzzZeroExtendProto {
+  optional BitsOperandIdxProto operand_idx = 1;
+  optional int64 bit_width = 2;
+}
+
+message FuzzBitSliceProto {
+  optional BitsOperandIdxProto operand_idx = 1;
+  optional int64 start = 2;
+  optional int64 bit_width = 3;
+}
+
+message FuzzBitSliceUpdateProto {
+  optional BitsOperandIdxProto operand_idx = 1;
+  optional BitsOperandIdxProto start_idx = 2;
+  optional BitsOperandIdxProto update_value_idx = 3;
+}
+
+message FuzzDynamicBitSliceProto {
+  optional BitsOperandIdxProto operand_idx = 1;
+  optional BitsOperandIdxProto start_idx = 2;
+  optional int64 bit_width = 3;
+  optional BitsCoercionMethodProto operand_coercion_method = 4;
+}
+
+message FuzzEncodeProto {
+  optional BitsOperandIdxProto operand_idx = 1;
+}
+
+message FuzzDecodeProto {
+  optional BitsOperandIdxProto operand_idx = 1;
+  optional int64 bit_width = 2;
+}
+
+message FuzzGateProto {
+  optional BitsOperandIdxProto condition_idx = 1;
+  optional BitsOperandIdxProto data_idx = 2;
+  optional BitsCoercionMethodProto condition_coercion_method = 3;
+}
+
+message FuzzDefineFunctionProto {
+  CombineListMethod combine_list_method = 1;
+  int64 next_nodes_consumed = 2;
+}
+
+message FuzzInvokeProto {
+  int64 function_index = 1;
+  repeated OperandIdxProto args_idxs = 2;
+  repeated CoercionMethodProto args_coercion_methods = 3;
+}

@@ -1,0 +1,7 @@
+module invert_with_assert(
+  input wire x,
+  output wire out
+);
+  assign out = ~x;
+  assert final ($isunknown(x) || x) else $fatal(0, "assert message");
+endmodule

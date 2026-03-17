@@ -1,0 +1,148 @@
+// Copyright 2020 The XLS Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef XLS_IR_FUNCTION_H_
+#define XLS_IR_FUNCTION_H_
+
+#include <functional>
+#include <list>
+#include <memory>
+#include <optional>
+#include <string>
+#include <string_view>
+
+#include "absl/base/casts.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "xls/common/status/status_macros.h"
+#include "xls/ir/function_base.h"
+#include "xls/ir/ir_annotator.h"
+#include "xls/ir/node.h"
+#include "xls/ir/nodes.h"
+#include "xls/ir/package.h"
+#include "xls/ir/type.h"
+
+namespace xls {
+
+class Function : public FunctionBase {
+ private:
+  using NodeList = std::list<std::unique_ptr<Node>>;
+
+ public:
+  Function(std::string_view name, Package* package)
+      : FunctionBase(name, package) {}
+
+  ~Function() override = default;
+
+  void MoveFrom(Function& other) {
+    FunctionBase::MoveFrom(other);
+    return_value_ = other.return_value();
+    return_type_ = return_value_->GetType();
+  }
+
+  void MoveParamsFrom(Function& other) {
+    FunctionBase::MoveFrom(other, [](const Node* n) { return n->Is<Param>(); });
+    other.params_.clear();
+  }
+
+  // Returns the node that serves as the return value of this function.
+  Node* return_value() const { return return_value_; }
+
+  // Return the return type from the return value, or the directly-set return
+  // type.
+  Type* return_type() const { return return_type_; };
+
+  // Sets the node that serves as the return value of this function.
+  absl::Status set_return_value(Node* n, bool validate = true);
+
+  // This only needs to be used directly for a nested source `Function` inside a
+  // block.
+  void set_return_type(Type* type) { return_type_ = type; }
+
+  FunctionType* GetType();
+
+  bool non_synth() const { return non_synth_; }
+  void set_non_synth(bool value) { non_synth_ = value; }
+
+  FunctionBase::Kind kind() const final {
+    return FunctionBase::Kind::kFunction;
+  }
+
+  using FunctionBase::DumpIr;
+  std::string DumpIr(const IrAnnotator& annotate) const override;
+
+  // DumpIr emits the IR in a hierarchical text format with the returned
+  // annotations after each node definition.
+  std::string DumpIrWithAnnotations(
+      const std::function<std::optional<std::string>(Node*)>& annotate) const;
+
+  // Creates a clone of the function with the new name 'new_name'. Function is
+  // owned by target_package.  call_remapping specifies any function
+  // substitutions to be used in the cloned function, e.g. If call_remapping
+  // holds {funcA, funcB}, any references to funcA in the function will be
+  // references to funcB in the cloned function.
+  absl::StatusOr<Function*> Clone(
+      std::string_view new_name, Package* target_package = nullptr,
+      const absl::flat_hash_map<const Function*, Function*>& call_remapping =
+          {},
+      std::optional<absl::flat_hash_map<Node*, Node*>*> original_node_to_clone =
+          std::nullopt) const;
+
+  // Returns true if analysis indicates that this function always produces the
+  // same value as 'other' when run with the same arguments. The analysis is
+  // conservative and false may be returned for some "equivalent" functions.
+  bool IsDefinitelyEqualTo(const Function* other) const;
+
+  bool HasImplicitUse(Node* node) const final { return node == return_value(); }
+
+ protected:
+  absl::Status InternalRebuildSideTables() final;
+
+ private:
+  Node* return_value_ = nullptr;
+  Type* return_type_ = nullptr;
+  // If true this is a non-synth function. It must have an empty-tuple return
+  // type.
+  bool non_synth_ = false;
+};
+
+// A function which has been scheduled and contains information about which
+// nodes execute in which pipeline stage.
+class ScheduledFunction : public Function {
+ public:
+  ScheduledFunction(std::string_view name, Package* package)
+      : Function(name, package) {}
+
+  bool IsScheduled() const override { return true; }
+
+  // Creates a clone of the scheduled function with the new name 'new_name'.
+  // Function is owned by target_package.  call_remapping specifies any function
+  // substitutions to be used in the cloned function, e.g. If call_remapping
+  // holds {funcA, funcB}, any references to funcA in the function will be
+  // references to funcB in the cloned function.
+  absl::StatusOr<ScheduledFunction*> Clone(
+      std::string_view new_name, Package* target_package = nullptr,
+      const absl::flat_hash_map<const Function*, Function*>& call_remapping =
+          {}) const {
+    XLS_ASSIGN_OR_RETURN(
+        Function * cloned_function,
+        Function::Clone(new_name, target_package, call_remapping));
+    return absl::down_cast<ScheduledFunction*>(cloned_function);
+  }
+};
+
+}  // namespace xls
+
+#endif  // XLS_IR_FUNCTION_H_

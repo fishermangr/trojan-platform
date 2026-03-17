@@ -1,0 +1,102 @@
+// Copyright 2024 The XLS Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package xls;
+
+// Listing of all XLS IR operations. These do not necessarily match the C++ enum
+// values.
+enum OpProto {
+  OP_INVALID = 0;
+  OP_ADD = 1;
+  OP_AND = 2;
+  OP_AND_REDUCE = 3;
+  OP_ASSERT = 4;
+  OP_COVER = 5;
+  OP_RECEIVE = 6;
+  OP_SEND = 7;
+  OP_NAND = 8;
+  OP_NOR = 9;
+  OP_AFTER_ALL = 10;
+  OP_ARRAY = 11;
+  OP_ARRAY_INDEX = 12;
+  OP_ARRAY_SLICE = 13;
+  OP_ARRAY_UPDATE = 14;
+  OP_ARRAY_CONCAT = 15;
+  OP_BIT_SLICE = 16;
+  OP_DYNAMIC_BIT_SLICE = 17;
+  OP_BIT_SLICE_UPDATE = 18;
+  OP_CONCAT = 19;
+  OP_COUNTED_FOR = 20;
+  OP_DECODE = 21;
+  OP_DYNAMIC_COUNTED_FOR = 22;
+  OP_ENCODE = 23;
+  OP_EQ = 24;
+  OP_IDENTITY = 25;
+  OP_INVOKE = 26;
+  OP_INPUT_PORT = 27;
+  OP_LITERAL = 28;
+  OP_MAP = 29;
+  OP_NE = 30;
+  OP_NEG = 31;
+  OP_NOT = 32;
+  OP_ONE_HOT = 33;
+  OP_ONE_HOT_SEL = 34;
+  OP_PRIORITY_SEL = 35;
+  OP_OR = 36;
+  OP_OR_REDUCE = 37;
+  OP_OUTPUT_PORT = 38;
+  OP_PARAM = 39;
+  OP_STATE_READ = 40;
+  OP_NEXT_VALUE = 41;
+  OP_REGISTER_READ = 42;
+  OP_REGISTER_WRITE = 43;
+  OP_INSTANTIATION_OUTPUT = 44;
+  OP_INSTANTIATION_INPUT = 45;
+  OP_REVERSE = 46;
+  OP_SDIV = 47;
+  OP_SMOD = 48;
+  OP_SEL = 49;
+  OP_SGE = 50;
+  OP_SGT = 51;
+  OP_SHLL = 52;
+  OP_SHRL = 53;
+  OP_SHRA = 54;
+  OP_SIGN_EXT = 55;
+  OP_SLE = 56;
+  OP_SLT = 57;
+  OP_SMUL = 58;
+  OP_SMULP = 59;
+  OP_SUB = 60;
+  OP_TUPLE = 61;
+  OP_TUPLE_INDEX = 62;
+  OP_UDIV = 63;
+  OP_UMOD = 64;
+  OP_UGE = 65;
+  OP_UGT = 66;
+  OP_ULE = 67;
+  OP_ULT = 68;
+  OP_UMUL = 69;
+  OP_UMULP = 70;
+  OP_XOR = 71;
+  OP_XOR_REDUCE = 72;
+  OP_ZERO_EXT = 73;
+  OP_GATE = 74;
+  OP_TRACE = 75;
+  OP_MIN_DELAY = 76;
+  OP_NEW_CHANNEL = 77;
+  OP_SEND_CHANNEL_END = 78;
+  OP_RECV_CHANNEL_END = 79;
+}

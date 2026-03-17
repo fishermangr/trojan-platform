@@ -1,0 +1,28 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+        exclude: '^(xls/contrib/.*|\.pre-commit-config.yaml|docs_src/passes_list.md|docs_src/bazel_rules_macros.md|.*\.(sh|ir|txt|patch|csv))$'
+      - id: trailing-whitespace
+        files: '(\.cc|\.h|\.py|\.proto)$'
+
+  - repo: local
+    hooks:
+      - id: check-cpp-absolute-includes
+        name: Check C++ absolute includes
+        entry: xls/dev_tools/check_cpp_includes.py
+        language: python
+        files: ^xls/.*\.(h|cc)$
+        exclude: '(^xls/contrib/|^xls/tools/trace_to_perfetto)'
+        types: [text]
+  - repo: https://github.com/pylint-dev/pylint
+    rev: v3.3.4
+    hooks:
+      - id: pylint
+        # Pylint is noisy with lots of false positives, the following settings
+        # run pylint, print the output, and ignore the exit code.
+        entry: bash -c 'pylint "$@" || true'
+        verbose: true
+        files: ^xls/.*\.py$
+        args: [--rcfile=.pylintrc]

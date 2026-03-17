@@ -1,0 +1,280 @@
+// Copyright 2021 The XLS Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Constructs that allow type information from the DSL to be serialized as an
+// artifact.
+
+syntax = "proto3";
+
+package xls.dslx;
+
+import "xls/dslx/frontend/pos.proto";
+
+enum AstNodeKindProto {
+  AST_NODE_KIND_INVALID = 0;
+  AST_NODE_KIND_TYPE_ANNOTATION = 1;
+  AST_NODE_KIND_MODULE = 2;
+  AST_NODE_KIND_NAME_DEF = 3;
+  AST_NODE_KIND_BUILTIN_NAME_DEF = 4;
+  AST_NODE_KIND_CONDITIONAL = 5;
+  AST_NODE_KIND_TYPE_ALIAS = 6;
+  AST_NODE_KIND_NUMBER = 7;
+  AST_NODE_KIND_IMPORT = 8;
+  AST_NODE_KIND_TYPE_REF = 9;
+  AST_NODE_KIND_UNOP = 10;
+  AST_NODE_KIND_BINOP = 11;
+  AST_NODE_KIND_COLON_REF = 12;
+  AST_NODE_KIND_PARAM = 13;
+  AST_NODE_KIND_FUNCTION = 14;
+  AST_NODE_KIND_NAME_REF = 15;
+  AST_NODE_KIND_PROC = 16;
+  AST_NODE_KIND_CONST_REF = 17;
+  AST_NODE_KIND_ARRAY = 18;
+  AST_NODE_KIND_STRING = 19;
+  AST_NODE_KIND_STRUCT_INSTANCE = 20;
+  AST_NODE_KIND_NAME_DEF_TREE = 21;
+  AST_NODE_KIND_SPLAT_STRUCT_INSTANCE = 22;
+  AST_NODE_KIND_INDEX = 23;
+  AST_NODE_KIND_RECV = 24;
+  AST_NODE_KIND_SEND = 25;
+  AST_NODE_KIND_TEST_FUNCTION = 26;
+  AST_NODE_KIND_WILDCARD_PATTERN = 27;
+  AST_NODE_KIND_WIDTH_SLICE = 28;
+  AST_NODE_KIND_MATCH_ARM = 29;
+  AST_NODE_KIND_MATCH = 30;
+  AST_NODE_KIND_ATTR = 31;
+  AST_NODE_KIND_INSTANTIATION = 32;
+  AST_NODE_KIND_INVOCATION = 33;
+  AST_NODE_KIND_SPAWN = 34;
+  AST_NODE_KIND_FORMAT_MACRO = 35;
+  AST_NODE_KIND_SLICE = 36;
+  AST_NODE_KIND_ENUM_DEF = 37;
+  AST_NODE_KIND_STRUCT_DEF = 38;
+  AST_NODE_KIND_QUICK_CHECK = 39;
+  AST_NODE_KIND_XLS_TUPLE = 40;
+  AST_NODE_KIND_FOR = 41;
+  AST_NODE_KIND_CAST = 42;
+  AST_NODE_KIND_CONSTANT_DEF = 43;
+  AST_NODE_KIND_LET = 44;
+  AST_NODE_KIND_CHANNEL_DECL = 45;
+  AST_NODE_KIND_PARAMETRIC_BINDING = 46;
+  AST_NODE_KIND_RECV_IF = 47;
+  AST_NODE_KIND_SEND_IF = 48;
+  AST_NODE_KIND_JOIN = 49;
+  AST_NODE_KIND_TEST_PROC = 50;
+  AST_NODE_KIND_TUPLE_INDEX = 51;
+  AST_NODE_KIND_STATEMENT_BLOCK = 52;
+  AST_NODE_KIND_CONST_FOR = 53;
+  AST_NODE_KIND_RANGE = 54;
+  AST_NODE_KIND_RECV_NON_BLOCKING = 55;
+  AST_NODE_KIND_RECV_IF_NON_BLOCKING = 56;
+  AST_NODE_KIND_ZERO_MACRO = 57;
+  AST_NODE_KIND_STATEMENT = 58;
+  AST_NODE_KIND_CONST_ASSERT = 59;
+  AST_NODE_KIND_PROC_MEMBER = 60;
+  AST_NODE_KIND_ALL_ONES_MACRO = 61;
+  AST_NODE_KIND_REST_OF_TUPLE = 62;
+  AST_NODE_KIND_IMPL = 63;
+  AST_NODE_KIND_VERBATIM_NODE = 64;
+  AST_NODE_KIND_FUNCTION_REF = 65;
+  AST_NODE_KIND_PROC_DEF = 66;
+  AST_NODE_KIND_USE = 67;
+  AST_NODE_KIND_USE_TREE_ENTRY = 68;
+  AST_NODE_KIND_STRUCT_MEMBER = 69;
+  AST_NODE_KIND_LAMBDA = 70;
+  reserved 71;
+  AST_NODE_KIND_PROC_ALIAS = 72;
+  AST_NODE_KIND_TRAIT = 73;
+  AST_NODE_KIND_ATTRIBUTE = 74;
+}
+
+message BitsValueProto {
+  optional bool is_signed = 1;
+  optional int32 bit_count = 2;
+  // Data is stored in big endian format (byte 0 holds the most-significant bits
+  // of the value).
+  optional bytes data = 3;
+}
+
+// Constexpr-evaluated values can be held in TypeDims (i.e. the
+// "dimension" slots within types). This represents an interpreter value a la
+// xls::dslx::InterpValue.
+message InterpValueProto {
+  oneof value_oneof {
+    BitsValueProto bits = 1;
+    // TODO(leary): 2021-09-24 Add other variants of InterpValue.
+  }
+}
+
+message ParametricConstantProto {
+  optional InterpValueProto constant = 1;
+}
+
+// See xls::dslx::ParametricSymbol.
+message ParametricSymbolProto {
+  optional string identifier = 1;
+  optional SpanProto span = 2;
+}
+
+message ParametricMulProto {
+  optional ParametricExpressionProto lhs = 1;
+  optional ParametricExpressionProto rhs = 2;
+}
+
+message ParametricAddProto {
+  optional ParametricExpressionProto lhs = 1;
+  optional ParametricExpressionProto rhs = 2;
+}
+
+// Parametric expressions can be held in TypeDims (i.e. the "dimension"
+// slots within types). This represents a parametric expression a la
+// xls::dslx::ParametricExpression.
+message ParametricExpressionProto {
+  // TODO(leary): 2021-09-24 Add support for converting parametric
+  // TypeDims to protobuf form.
+  oneof expr_oneof {
+    ParametricSymbolProto symbol = 1;
+    ParametricMulProto mul = 2;
+    ParametricAddProto add = 3;
+    ParametricConstantProto constant = 4;
+  }
+}
+
+message TypeDimProto {
+  oneof dim_oneof {
+    InterpValueProto interp_value = 1;
+    ParametricExpressionProto parametric = 2;
+  }
+}
+
+message BitsTypeProto {
+  optional bool is_signed = 1;
+  optional TypeDimProto dim = 2;
+}
+
+message BitsConstructorTypeProto {
+  optional TypeDimProto is_signed = 1;
+}
+
+message FunctionTypeProto {
+  repeated TypeProto params = 1;
+  optional TypeProto return_type = 2;
+}
+
+message TupleTypeProto {
+  repeated TypeProto members = 1;
+}
+
+message ArrayTypeProto {
+  optional TypeProto element_type = 1;
+  optional TypeDimProto size = 2;
+}
+
+// Serialized data for a struct definition referenced in a struct type -- see
+// `xls::dslx::StructDef`.
+message StructDefProto {
+  optional SpanProto span = 1;
+  optional string identifier = 2;
+  repeated string member_names = 3;
+  optional bool is_public = 4;
+}
+
+// Serialized data for a proc definition referenced in a proc type -- see
+// `xls::dslx::ProcDef`.
+message ProcDefProto {
+  optional SpanProto span = 1;
+  optional string identifier = 2;
+  repeated string member_names = 3;
+  optional bool is_public = 4;
+}
+
+// Struct type (that has a nominal struct definition associated with it) -- see
+// `xls::dslx::StructType`.
+message StructTypeProto {
+  repeated TypeProto members = 1;
+  optional StructDefProto struct_def = 2;
+}
+
+// Proc type, for procs that are formatted like structs -- see
+// `xls::dslx::ProcType`.
+message ProcTypeProto {
+  repeated TypeProto members = 1;
+  optional ProcDefProto proc_def = 2;
+}
+
+// Serialized data for an enum definition referenced in an enum type -- see
+// `xls::dslx::EnumDef`.
+message EnumDefProto {
+  optional SpanProto span = 1;
+  optional string identifier = 2;
+  repeated string member_names = 3;
+  optional bool is_public = 4;
+}
+
+message EnumTypeProto {
+  optional TypeDimProto size = 1;
+  optional EnumDefProto enum_def = 2;
+  optional bool is_signed = 3;
+  repeated InterpValueProto members = 4;
+}
+
+message MetaTypeProto {
+  optional TypeProto wrapped = 1;
+}
+
+enum ChannelDirectionProto {
+  CHANNEL_DIRECTION_INVALID = 0;
+  CHANNEL_DIRECTION_IN = 1;
+  CHANNEL_DIRECTION_OUT = 2;
+}
+
+message ChannelTypeProto {
+  optional TypeProto payload = 1;
+  ChannelDirectionProto direction = 2;
+}
+
+message TokenTypeProto {
+  // Empty.
+}
+
+message ModuleTypeProto {
+  // Empty.
+}
+
+message TypeProto {
+  oneof type_oneof {
+    BitsTypeProto bits_type = 1;
+    FunctionTypeProto fn_type = 2;
+    TupleTypeProto tuple_type = 3;
+    ArrayTypeProto array_type = 4;
+    StructTypeProto struct_type = 5;
+    TokenTypeProto token_type = 6;
+    EnumTypeProto enum_type = 7;
+    MetaTypeProto meta_type = 8;
+    ChannelTypeProto channel_type = 9;
+    BitsConstructorTypeProto bits_constructor_type = 10;
+    ProcTypeProto proc_type = 11;
+    ModuleTypeProto module_type = 12;
+  }
+}
+
+message AstNodeTypeInfoProto {
+  optional AstNodeKindProto kind = 1;
+  optional SpanProto span = 2;
+  optional TypeProto type = 3;
+}
+
+message TypeInfoProto {
+  repeated AstNodeTypeInfoProto nodes = 1;
+}

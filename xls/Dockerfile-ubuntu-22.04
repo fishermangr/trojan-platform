@@ -1,0 +1,42 @@
+# NOTE: We try to support Ubuntu 22.04 environment as it is the latest Ubuntu
+# LTS release.
+
+# Download base image ubuntu 22.04
+FROM ubuntu:22.04
+
+ARG SKIP_TESTS=0
+
+# LABEL about the custom image
+LABEL version="0.1"
+LABEL description="Docker Image for Building/Testing XLS on Ubuntu 22.04 x86-64"
+
+# Update package info
+RUN apt-get update -y
+
+# Install bazelisk from latest release
+RUN apt-get install -y curl python3
+RUN curl -O -L $(curl -L \
+  -H "Accept: application/vnd.github+json" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  https://api.github.com/repos/bazelbuild/bazelisk/releases | \
+  python3 -c 'import json; import sys; print(filter(lambda url: "linux-amd64" in url, (a["browser_download_url"] for a in json.load(sys.stdin)[0]["assets"])).__next__())')
+
+RUN chmod +x bazelisk-linux-amd64 && mv bazelisk-linux-amd64 /usr/bin/bazel
+
+
+# Install dependencies
+RUN apt-get -y install python3-dev python-is-python3 libtinfo6 build-essential libxml2-dev liblapack-dev libblas-dev gfortran zip default-jdk
+
+# Install development tools
+RUN apt-get install -y git vim lldb
+
+RUN useradd -m xls-developer
+USER xls-developer
+
+# Map the project contents in.
+ADD --chown=xls-developer . /home/xls-developer/xls/
+WORKDIR /home/xls-developer/xls/
+
+# Test everything (opt), exclude contrib (including xlscc) for now due to
+# increased build time when we add Clang.
+RUN if [ "$SKIP_TESTS" != "1" ]; then bazel test --config=ci -c opt --test_summary=terse --test_verbose_timeout_warnings -- //xls/... -//xls/contrib/... -//xls/dev_tools/...; else echo "Skipping tests because SKIP_TESTS is 1"; fi

@@ -1,0 +1,11 @@
+module invert_with_assert(
+  input wire x,
+  output wire out
+);
+  assign out = ~x;
+  `ifdef ASSERT_ON
+  `ifndef SYNTHESIS
+  assert final ($isunknown(x) || x) else $fatal(0, "assert message");
+  `endif  // SYNTHESIS
+  `endif  // ASSERT_ON
+endmodule

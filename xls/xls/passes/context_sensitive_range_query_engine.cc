@@ -1,0 +1,682 @@
+// Copyright 2023 The XLS Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "xls/passes/context_sensitive_range_query_engine.h"
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <functional>
+#include <iterator>
+#include <memory>
+#include <optional>
+#include <utility>
+#include <vector>
+
+#include "absl/algorithm/container.h"
+#include "absl/container/btree_set.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/types/span.h"
+#include "cppitertools/zip.hpp"
+#include "xls/common/status/ret_check.h"
+#include "xls/common/status/status_macros.h"
+#include "xls/data_structures/inline_bitmap.h"
+#include "xls/data_structures/leaf_type_tree.h"
+#include "xls/ir/bits.h"
+#include "xls/ir/dfs_visitor.h"
+#include "xls/ir/function_base.h"
+#include "xls/ir/interval.h"
+#include "xls/ir/interval_ops.h"
+#include "xls/ir/interval_set.h"
+#include "xls/ir/node.h"
+#include "xls/ir/nodes.h"
+#include "xls/ir/op.h"
+#include "xls/ir/ternary.h"
+#include "xls/ir/topo_sort.h"
+#include "xls/ir/type.h"
+#include "xls/passes/back_propagate_range_analysis.h"
+#include "xls/passes/node_dependency_analysis.h"
+#include "xls/passes/predicate_state.h"
+#include "xls/passes/query_engine.h"
+#include "xls/passes/range_query_engine.h"
+
+namespace xls {
+
+namespace {
+
+// Class which identifies which nodes BackPropagator might be able to extract
+// more precise bounds for.
+//
+// TODO(allight): This should maybe belong in the
+// back_propagate_range_analysis.h
+class InterestingNodeFinder final : public DfsVisitorWithDefault {
+ public:
+  explicit InterestingNodeFinder(const RangeQueryEngine& base) : base_(base) {}
+  static absl::StatusOr<std::vector<Node*>> Execute(
+      const RangeQueryEngine& base, Node* cond) {
+    InterestingNodeFinder inf(base);
+    inf.interesting_.push_back(cond);
+    XLS_RETURN_IF_ERROR(cond->VisitSingleNode(&inf));
+    return std::move(inf.interesting_);
+  }
+
+  absl::Status DefaultHandler(Node* node) final { return absl::OkStatus(); }
+  absl::Status HandleNe(CompareOp* ne) final { return UnifyExactMatch(ne); }
+  absl::Status HandleEq(CompareOp* eq) final { return UnifyExactMatch(eq); }
+  absl::Status HandleSGe(CompareOp* cmp) final { return UnifyComparison(cmp); }
+  absl::Status HandleSGt(CompareOp* cmp) final { return UnifyComparison(cmp); }
+  absl::Status HandleSLe(CompareOp* cmp) final { return UnifyComparison(cmp); }
+  absl::Status HandleSLt(CompareOp* cmp) final { return UnifyComparison(cmp); }
+  absl::Status HandleUGe(CompareOp* cmp) final { return UnifyComparison(cmp); }
+  absl::Status HandleUGt(CompareOp* cmp) final { return UnifyComparison(cmp); }
+  absl::Status HandleULe(CompareOp* cmp) final { return UnifyComparison(cmp); }
+  absl::Status HandleULt(CompareOp* cmp) final { return UnifyComparison(cmp); }
+  absl::Status HandleNaryAnd(NaryOp* and_op) final {
+    if (and_op->operand_count() == 2) {
+      interesting_.push_back(and_op->operand(0));
+      interesting_.push_back(and_op->operand(1));
+      AddImpreciseOperands(and_op->operand(0));
+      AddImpreciseOperands(and_op->operand(1));
+    }
+    return absl::OkStatus();
+  }
+
+ private:
+  absl::Status UnifyComparison(CompareOp* cmp) {
+    AddImpreciseOperands(cmp);
+    return absl::OkStatus();
+  }
+  absl::Status UnifyExactMatch(CompareOp* eq) {
+    AddImpreciseOperands(eq);
+    return absl::OkStatus();
+  }
+
+  void AddImpreciseOperands(Node* n) {
+    for (auto* op : n->operands()) {
+      if (absl::c_any_of(
+              base_.GetIntervals(op).elements(),
+              [](const IntervalSet& is) { return !is.IsPrecise(); })) {
+        interesting_.push_back(op);
+      }
+    }
+  }
+
+  const RangeQueryEngine& base_;
+  std::vector<Node*> interesting_;
+};
+
+// Class to hold givens extracted from select context.
+//
+// This also restricts the range analysis to end at the select we are
+// specializing on since nodes below it can only be specialized to this select
+// if we moved them into the selects branches. This sort of transform is not one
+// we currently perform.
+class ContextGivens final : public RangeDataProvider {
+ public:
+  ContextGivens(const std::vector<Node*>& topo_sort, const Node* finish,
+                const absl::flat_hash_map<Node*, RangeData>& data,
+                std::function<std::optional<RangeData>(Node*)> memoized_data)
+      : topo_sort_(topo_sort),
+        finish_(finish),
+        data_(data),
+        memoized_data_(std::move(memoized_data)) {}
+
+  std::optional<RangeData> GetKnownIntervals(Node* node) final {
+    if (data_.contains(node)) {
+      return data_.at(node);
+    }
+    return memoized_data_(node);
+  }
+
+  absl::Status IterateFunction(DfsVisitor* visitor) final {
+    for (Node* n : topo_sort_) {
+      if (n == finish_) {
+        break;
+      }
+      XLS_RETURN_IF_ERROR(n->VisitSingleNode(visitor));
+    }
+    return absl::OkStatus();
+  }
+
+ private:
+  const std::vector<Node*>& topo_sort_;
+  const Node* finish_;
+  const absl::flat_hash_map<Node*, RangeData> data_;
+  std::function<std::optional<RangeData>(Node*)> memoized_data_;
+};
+
+// A pair of selector values and selected arms.
+struct SelectorAndArm {
+  // The node which is the selector in some selects.
+  Node* selector;
+  // The arm value we assign the selector.
+  PredicateState::ArmT arm;
+
+  friend bool operator==(const SelectorAndArm& x, const SelectorAndArm& y) {
+    return (x.selector == y.selector) && (x.arm == y.arm);
+  }
+
+  template <typename H>
+  friend H AbslHashValue(H h, const SelectorAndArm& s) {
+    return H::combine(std::move(h), s.selector, s.arm);
+  }
+};
+
+struct EquivalenceSet {
+  std::vector<PredicateState> equivalent_states;
+  absl::flat_hash_set<Node*> interesting_nodes;
+};
+
+// Helper to perform the actual analysis and hold together all data needed.
+// This is used to fill in the fields of the actual query engine and therefore
+// does not own the arena/map that it fills in.
+class Analysis {
+ public:
+  struct InterestingStatesAndNodeList {
+    std::vector<std::pair<PredicateState, absl::flat_hash_set<Node*>>>
+        state_and_nodes;
+  };
+  Analysis(
+      RangeQueryEngine& base_range,
+      std::vector<std::unique_ptr<const RangeQueryEngine>>& arena,
+      absl::flat_hash_map<PredicateState, const RangeQueryEngine*>& engines)
+      : base_range_(base_range), arena_(arena), engines_(engines) {}
+
+  absl::StatusOr<ReachedFixpoint> Execute(FunctionBase* f) {
+    // Get the topological sort once so we don't recalculate it each time.
+    topo_sort_ = TopoSort(f);
+    // Get the base case.
+    absl::flat_hash_map<Node*, RangeData> empty;
+    ContextGivens base_givens(
+        topo_sort_, /*finish=*/nullptr,
+        /* data=*/empty,
+        [](auto n) -> std::optional<RangeData> { return std::nullopt; });
+    XLS_RETURN_IF_ERROR(base_range_.PopulateWithGivens(base_givens).status());
+
+    // Get every possible one-hot state.
+
+    std::vector<PredicateState> all_states;
+    // Iterate in same order we walk.
+    for (Node* n : topo_sort_) {
+      // TODO(allight): Support priority-select
+      if (n->Is<Select>()) {
+        for (int64_t idx = 0; idx < n->As<Select>()->cases().size(); ++idx) {
+          all_states.push_back(PredicateState(n->As<Select>(), idx));
+        }
+        if (n->As<Select>()->default_value().has_value()) {
+          all_states.push_back(
+              PredicateState(n->As<Select>(), PredicateState::kDefaultArm));
+        }
+      }
+    }
+    XLS_ASSIGN_OR_RETURN(auto interesting,
+                         FilterUninterestingStates(f, all_states));
+    // Bucket states into equivalence classes. Any predicate-states where the
+    // arm and selector are identical
+    absl::flat_hash_map<SelectorAndArm, EquivalenceSet> equivalences;
+    equivalences.reserve(interesting.state_and_nodes.size());
+    for (const auto& [state, interesting_nodes] : interesting.state_and_nodes) {
+      equivalences.try_emplace(
+          SelectorAndArm{.selector = state.node()->As<Select>()->selector(),
+                         .arm = state.arm()},
+          EquivalenceSet{.equivalent_states = {state},
+                         .interesting_nodes = interesting_nodes});
+    }
+    // NB We don't care what order we examine each equivalence (since all are
+    // disjoint).
+    for (const auto& [_, states] : equivalences) {
+      // Since the all_states_ is in topo the last equiv state is usable for
+      // everything.
+      // We don't care what order we calculate the equivalences because each is
+      // fully disjoint from one another as we consider only a single condition
+      // to be true at a time.
+      XLS_ASSIGN_OR_RETURN(auto tmp,
+                           CalculateRangeGiven(states.equivalent_states.back(),
+                                               states.interesting_nodes));
+      auto result =
+          arena_
+              .emplace_back(std::make_unique<RangeQueryEngine>(std::move(tmp)))
+              .get();
+      for (const PredicateState& ps : states.equivalent_states) {
+        engines_[ps] = result;
+      }
+    }
+    return ReachedFixpoint::Changed;
+  }
+
+ private:
+  // Get rid of any predicate-states that we can statically tell won't affect
+  // anything. A predicate state where the values that impact the selector don't
+  // impact the selected value in any meaningful way will not show any
+  // differences in the calculated ranges so no need to calculate them at all.
+  absl::StatusOr<InterestingStatesAndNodeList> FilterUninterestingStates(
+      FunctionBase* f, const std::vector<PredicateState>& states) {
+    std::vector<Node*> select_nodes;
+    std::vector<Node*> selectee_nodes;
+    // Calculate all nodes which depend on or are depended on by either selector
+    // values or the selected values.
+    //
+    // We do this in one pass so find all the interesting nodes first.
+    for (const PredicateState& s : states) {
+      XLS_ASSIGN_OR_RETURN(
+          std::vector<Node*> interesting,
+          InterestingNodeFinder::Execute(base_range_, s.selector()));
+      absl::c_copy(interesting, std::back_inserter(select_nodes));
+      selectee_nodes.push_back(s.value());
+    }
+    NodeForwardDependencyAnalysis forward_deps;
+    NodeBackwardDependencyAnalysis backward_deps;
+    XLS_RETURN_IF_ERROR(forward_deps.Attach(f).status());
+    XLS_RETURN_IF_ERROR(backward_deps.Attach(f).status());
+    std::vector<std::pair<PredicateState, absl::flat_hash_set<Node*>>>
+        interesting_states;
+    interesting_states.reserve(states.size());
+    for (const PredicateState& ps : states) {
+      // If there's any node which is both an input into the select value and
+      // affected by something the conditional specialization can discover we
+      // consider it interesting.
+      absl::flat_hash_set<Node*> depending_on_selector;
+      // What nodes do we care about for this specific run. Since this basically
+      // only depends on the input node no need to memoize it.
+      XLS_ASSIGN_OR_RETURN(
+          std::vector<Node*> interesting,
+          InterestingNodeFinder::Execute(base_range_, ps.selector()));
+      // Nodes that the selector affects & nodes the selected value is affected
+      // by is the set of nodes with potentially changed conditional ranges.
+      absl::flat_hash_set<Node*> depended_on_by_value =
+          forward_deps.NodesDependedOnBy(ps.value());
+      absl::flat_hash_set<Node*> final_deps;
+      for (Node* n : interesting) {
+        auto deps = backward_deps.NodesDependingOn(n);
+        depending_on_selector.insert(deps.begin(), deps.end());
+        for (Node* dep : deps) {
+          if (depended_on_by_value.contains(dep)) {
+            final_deps.insert(dep);
+          }
+        }
+      }
+      if (!final_deps.empty()) {
+        // nodes affected by the known data are the ones we need to recalculate.
+        interesting_states.push_back({ps, std::move(depending_on_selector)});
+      }
+    }
+    return InterestingStatesAndNodeList{.state_and_nodes = interesting_states};
+  }
+  absl::StatusOr<RangeQueryEngine> CalculateRangeGiven(
+      PredicateState s,
+      const absl::flat_hash_set<Node*>& interesting_nodes) const {
+    RangeQueryEngine result;
+    XLS_ASSIGN_OR_RETURN(
+        (std::optional<absl::flat_hash_map<Node*, RangeData>> known_data),
+        ExtractKnownData(s));
+    if (!known_data) {
+      // This is an impossible situation. Just return the default base range.
+      // TODO(allight): We should communicate this up somehow.
+      result = base_range_;
+      return result;
+    }
+    ContextGivens givens(
+        topo_sort_, s.node(), *known_data,
+        [&](Node* n) -> std::optional<RangeData> {
+          if (interesting_nodes.contains(n)) {
+            // Affected by known data.
+            return std::nullopt;
+          }
+          // return memoized value from base
+          std::optional<SharedLeafTypeTree<TernaryVector>> ternary =
+              n->GetType()->IsBits() ? base_range_.GetTernary(n) : std::nullopt;
+          return RangeData{
+              .ternary = ternary.has_value()
+                             ? std::make_optional(ternary->Get({}))
+                             : std::nullopt,
+              .interval_set = base_range_.GetIntervals(n),
+          };
+        });
+    XLS_RETURN_IF_ERROR(result.PopulateWithGivens(givens).status());
+    return result;
+  }
+
+  absl::StatusOr<std::optional<absl::flat_hash_map<Node*, RangeData>>>
+  ExtractKnownData(PredicateState s) const {
+    XLS_RET_CHECK(!s.IsBasePredicate())
+        << "Can't back-propagate base predicate!";
+    Select* select_node = s.node()->As<Select>();
+    Node* selector = select_node->selector();
+    CHECK(selector->GetType()->IsBits()) << "Non-bits select: " << *selector;
+    IntervalSet given(selector->GetType()->GetFlatBitCount());
+    if (s.IsDefaultArm()) {
+      given.AddInterval(Interval(
+          UBits(select_node->cases().size(), selector->BitCountOrDie()),
+          Bits::AllOnes(selector->BitCountOrDie())));
+    } else {
+      Bits value = UBits(s.arm_index(), selector->BitCountOrDie());
+      given = IntervalSet::Precise(value);
+    }
+    given.Normalize();
+    if (IntervalSet::Intersect(given,
+                               base_range_.GetIntervals(selector).Get({}))
+            .IsEmpty()) {
+      // This given can never even be selected in real code.
+      // TODO(allight): Ideally we'd communicate in some way that this value is
+      // impossible.
+      return std::nullopt;
+    }
+    XLS_ASSIGN_OR_RETURN(
+        (absl::flat_hash_map<Node*, IntervalSet> intervals),
+        PropagateOneGivenBackwards(base_range_, selector, given));
+    absl::flat_hash_map<Node*, RangeData> ranges;
+    ranges.reserve(intervals.size());
+    for (auto [node, interval] : std::move(intervals)) {
+      if (interval.IsEmpty()) {
+        // This case is actually impossible since it implies a contradiction in
+        // our predecessors. Force fallback to basic range analysis.
+        // TODO(allight): Ideally we'd communicate in some way that this value
+        // is impossible.
+        return std::nullopt;
+      } else {
+        ranges[node] =
+            RangeData{.ternary = interval_ops::ExtractTernaryVector(interval),
+                      .interval_set = IntervalSetTree::CreateSingleElementTree(
+                          node->GetType(), std::move(interval))};
+      }
+    }
+    return ranges;
+  }
+
+  std::vector<Node*> topo_sort_;
+  RangeQueryEngine& base_range_;
+  std::vector<std::unique_ptr<const RangeQueryEngine>>& arena_;
+  absl::flat_hash_map<PredicateState, const RangeQueryEngine*>& engines_;
+};
+
+// A proxy query engine which specializes using select context.
+class ProxyContextQueryEngine final : public QueryEngine {
+ public:
+  ProxyContextQueryEngine(const ContextSensitiveRangeQueryEngine& base,
+                          const RangeQueryEngine& range_data)
+      : base_(base), range_data_(range_data) {}
+
+  absl::StatusOr<ReachedFixpoint> Populate(FunctionBase* f) override {
+    return absl::UnimplementedError(
+        "Cannot populate proxy query engine. Populate must be called on "
+        "original engine only.");
+  }
+  bool IsTracked(Node* node) const override { return base_.IsTracked(node); }
+
+  std::optional<SharedLeafTypeTree<TernaryVector>> GetTernary(
+      Node* node) const override {
+    return MostSpecific(node).GetTernary(node);
+  }
+
+  LeafTypeTree<IntervalSet> GetIntervals(Node* node) const override {
+    return MostSpecific(node).GetIntervals(node);
+  }
+
+  bool AtMostOneTrue(absl::Span<TreeBitLocation const> bits) const override {
+    TernaryVector ternary = GetTernaryOf(bits);
+    return std::count_if(ternary.cbegin(), ternary.cend(), [&](TernaryValue v) {
+             return v == TernaryValue::kKnownOne || v == TernaryValue::kUnknown;
+           }) <= 1;
+  }
+
+  bool AtLeastOneTrue(absl::Span<TreeBitLocation const> bits) const override {
+    TernaryVector ternary = GetTernaryOf(bits);
+    return std::count_if(ternary.cbegin(), ternary.cend(), [&](TernaryValue v) {
+             return v == TernaryValue::kKnownOne;
+           }) >= 1;
+  }
+
+  bool Implies(const TreeBitLocation& a,
+               const TreeBitLocation& b) const override {
+    return MostSpecific(a.node(), b.node()).Implies(a, b);
+  }
+  // We're a range-analysis so no data here.
+  std::optional<Bits> ImpliedNodeValue(
+      absl::Span<const std::pair<TreeBitLocation, bool>> predicate_bit_values,
+      Node* node) const override {
+    return std::nullopt;
+  }
+  std::optional<TernaryVector> ImpliedNodeTernary(
+      absl::Span<const std::pair<TreeBitLocation, bool>> predicate_bit_values,
+      Node* node) const override {
+    return std::nullopt;
+  }
+
+  bool KnownEquals(const TreeBitLocation& a,
+                   const TreeBitLocation& b) const override {
+    std::optional<bool> a_value = QueryEngine::KnownValue(a);
+    if (!a_value.has_value()) {
+      return false;
+    }
+    return a_value.has_value() && a_value == QueryEngine::KnownValue(b);
+  }
+
+  // Returns true if 'a' is the inverse of 'b'
+  bool KnownNotEquals(const TreeBitLocation& a,
+                      const TreeBitLocation& b) const override {
+    std::optional<bool> a_value = QueryEngine::KnownValue(a);
+    if (!a_value.has_value()) {
+      return false;
+    }
+    std::optional<bool> b_value = QueryEngine::KnownValue(b);
+    if (!b_value.has_value()) {
+      return false;
+    }
+    return a_value != b_value;
+  }
+
+  bool Covers(Node* node, const Bits& value) const override {
+    return MostSpecific(node).Covers(node, value);
+  }
+
+  Bits MaxUnsignedValue(Node* node) const override {
+    return MostSpecific(node).MaxUnsignedValue(node);
+  }
+
+  Bits MinUnsignedValue(Node* node) const override {
+    return MostSpecific(node).MinUnsignedValue(node);
+  }
+
+  std::optional<int64_t> KnownLeadingZeros(Node* node) const override {
+    return MostSpecific(node).KnownLeadingZeros(node);
+  }
+
+  std::optional<int64_t> KnownLeadingOnes(Node* node) const override {
+    return MostSpecific(node).KnownLeadingOnes(node);
+  }
+
+  std::optional<int64_t> KnownLeadingSignBits(Node* node) const override {
+    return MostSpecific(node).KnownLeadingSignBits(node);
+  }
+
+ private:
+  TernaryVector GetTernaryOf(absl::Span<TreeBitLocation const> bits) const {
+    // TODO(allight): Very inefficient but the AtMost/AtLeastOne don't seem to
+    // actually be used?
+    InlineBitmap known(bits.size());
+    InlineBitmap values(bits.size());
+    for (int64_t i = 0; i < bits.size(); ++i) {
+      bool bit_known = IsKnown(bits[i]);
+      if (bit_known) {
+        known.Set(i, true);
+        values.Set(i, IsOne(bits[i]));
+      }
+    }
+    return ternary_ops::FromKnownBits(Bits::FromBitmap(known),
+                                      Bits::FromBitmap(values));
+  }
+  const QueryEngine& MostSpecific(Node* nodeA, Node* nodeB) const {
+    if (range_data_.HasKnownIntervals(nodeA) &&
+        range_data_.HasKnownIntervals(nodeB)) {
+      return range_data_;
+    }
+    return base_;
+  }
+  const QueryEngine& MostSpecific(Node* node) const {
+    if (node->OpIn({Op::kSel})) {
+      // Better results just looking at the combination.
+      return base_;
+    }
+    if (range_data_.HasKnownIntervals(node)) {
+      return range_data_;
+    }
+    return base_;
+  }
+  const ContextSensitiveRangeQueryEngine& base_;
+  const RangeQueryEngine& range_data_;
+};
+
+std::vector<std::unique_ptr<QueryEngine>> SpecializedForArms(
+    const ContextSensitiveRangeQueryEngine* base, Select* n) {
+  std::vector<std::unique_ptr<QueryEngine>> res;
+  res.reserve(n->operand_count() - 1);
+  for (int64_t i = 0; i < n->As<Select>()->cases().size(); ++i) {
+    res.push_back(
+        base->SpecializeGivenPredicate({PredicateState(n->As<Select>(), i)}));
+  }
+  if (n->As<Select>()->default_value()) {
+    res.push_back(base->SpecializeGivenPredicate(
+        {PredicateState(n->As<Select>(), PredicateState::kDefaultArm)}));
+  }
+  return res;
+}
+std::vector<Interval> GetBranchIntervals(Select* n) {
+  std::vector<Interval> res;
+  res.reserve(n->operand_count() - 1);
+  for (int64_t i = 0; i < n->cases().size(); ++i) {
+    res.push_back(Interval::Precise(UBits(i, n->selector()->BitCountOrDie())));
+  }
+  if (n->default_value()) {
+    res.push_back(Interval::Closed(
+        UBits(n->cases().size(), n->selector()->BitCountOrDie()),
+        Bits::AllOnes(n->selector()->BitCountOrDie())));
+  }
+  return res;
+}
+}  // namespace
+
+absl::StatusOr<ReachedFixpoint> ContextSensitiveRangeQueryEngine::Populate(
+    FunctionBase* f) {
+  Analysis analysis(base_case_ranges_, arena_, one_hot_ranges_);
+  XLS_ASSIGN_OR_RETURN(ReachedFixpoint fixpoint, analysis.Execute(f));
+  // Fill in select ranges before any changes occur to the function.
+  for (Node* n : TopoSort(f)) {
+    // TODO(allight): Support priority-select
+    if (n->Is<Select>()) {
+      std::optional<RangeData> data;
+      IntervalSet selector_interval =
+          GetIntervals(n->As<Select>()->selector()).Get({});
+      for (const auto& [branch, qe, branch_req_interval] :
+           iter::zip(n->operands().subspan(1),
+                     SpecializedForArms(this, n->As<Select>()),
+                     GetBranchIntervals(n->As<Select>()))) {
+        if (IntervalSet::Disjoint(selector_interval,
+                                  IntervalSet::Of({branch_req_interval}))) {
+          // Selector cannot actually take this branch.
+          continue;
+        }
+        if (!data) {
+          data = RangeData{
+              .ternary =
+                  n->GetType()->IsBits()
+                      ? std::make_optional(qe->GetTernary(branch)->Get({}))
+                      : std::nullopt,
+              .interval_set = qe->GetIntervals(branch),
+          };
+        } else {
+          XLS_RETURN_IF_ERROR(
+              (leaf_type_tree::UpdateFrom<IntervalSet, IntervalSet>(
+                  data->interval_set.AsMutableView(),
+                  qe->GetIntervals(branch).AsView(),
+                  [](Type* t, IntervalSet& l, const IntervalSet& r,
+                     absl::Span<int64_t const> idx) -> absl::Status {
+                    l = IntervalSet::Combine(l, r);
+                    return absl::OkStatus();
+                  })));
+          if (data->ternary) {
+            ternary_ops::UpdateWithIntersection(
+                *data->ternary, qe->GetTernary(branch)->Get({}));
+          }
+        }
+      }
+      XLS_RET_CHECK(data) << "No branch is selectable for " << n;
+      select_ranges_[n] = *std::move(data);
+    }
+  }
+  return fixpoint;
+}
+
+std::unique_ptr<QueryEngine>
+ContextSensitiveRangeQueryEngine::SpecializeGivenPredicate(
+    const absl::btree_set<PredicateState>& state) const {
+  // Currently only single element states are supported.
+  // We do check for consistency here but really we just ignore extra state
+  // elements since something that is true for A is also true for A && B. We
+  // don't have any particular strategy for picking which one gets to be the
+  // 'real' state just using 'begin'.
+  CHECK_LE(state.size(), 1);
+  if (state.empty() || !one_hot_ranges_.contains(*state.cbegin())) {
+    return QueryEngine::SpecializeGivenPredicate(state);
+  }
+  return std::make_unique<ProxyContextQueryEngine>(
+      *this, *one_hot_ranges_.at(*state.cbegin()));
+}
+
+LeafTypeTree<IntervalSet> ContextSensitiveRangeQueryEngine::GetIntervals(
+    Node* node) const {
+  if (!node->OpIn({Op::kSel}) || !select_ranges_.contains(node)) {
+    return base_case_ranges_.GetIntervals(node);
+  }
+  return select_ranges_.at(node).interval_set;
+}
+
+std::optional<SharedLeafTypeTree<TernaryVector>>
+ContextSensitiveRangeQueryEngine::GetTernary(Node* node) const {
+  if (!node->OpIn({Op::kSel}) || !select_ranges_.contains(node)) {
+    return base_case_ranges_.GetTernary(node);
+  }
+  if (!select_ranges_.at(node).ternary) {
+    return std::nullopt;
+  }
+  return LeafTypeTree<TernaryVector>::CreateSingleElementTree(
+             node->GetType(), *select_ranges_.at(node).ternary)
+      .AsShared();
+}
+bool ContextSensitiveRangeQueryEngine::Covers(Node* node,
+                                              const Bits& value) const {
+  if (!node->OpIn({Op::kSel}) || !select_ranges_.contains(node)) {
+    return base_case_ranges_.Covers(node, value);
+  }
+  return select_ranges_.at(node).interval_set.Get({}).Covers(value);
+}
+Bits ContextSensitiveRangeQueryEngine::MaxUnsignedValue(Node* node) const {
+  if (!node->OpIn({Op::kSel}) || !select_ranges_.contains(node)) {
+    return base_case_ranges_.MaxUnsignedValue(node);
+  }
+  return select_ranges_.at(node).interval_set.Get({}).UpperBound().value_or(
+      Bits::AllOnes(node->BitCountOrDie()));
+}
+Bits ContextSensitiveRangeQueryEngine::MinUnsignedValue(Node* node) const {
+  if (!node->OpIn({Op::kSel}) || !select_ranges_.contains(node)) {
+    return base_case_ranges_.MinUnsignedValue(node);
+  }
+  return select_ranges_.at(node).interval_set.Get({}).LowerBound().value_or(
+      Bits(node->BitCountOrDie()));
+}
+
+}  // namespace xls

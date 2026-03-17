@@ -1,0 +1,87 @@
+module test_module(
+  input wire clk,
+  input wire [31:0] a,
+  input wire [31:0] b
+);
+  my_label: assert property (@(posedge clk) disable iff ($isunknown(a) || $isunknown(b)) a < b) else $fatal(0, "`a` must be less than `b`!");
+endmodule
+
+
+module testbench;
+  reg clk;
+  reg [31:0] a;
+  reg [31:0] b;
+  test_module dut (
+    .clk(clk),
+    .a(a),
+    .b(b)
+  );
+
+  // Clock generator.
+  initial begin
+    clk = 0;
+    forever #5 clk = !clk;
+  end
+
+  // Monitor for input/output ports.
+  initial begin
+    $display("Clock rises at 5, 15, 25, ....");
+    $display("Signals driven one time unit after rising clock.");
+    $display("Signals sampled one time unit before rising clock.");
+    $display("Starting simulation. Monitor output:");
+    $monitor("%t a: %d b: %d", $time, a, b);
+  end
+
+  // Thread `watchdog`. Drives signals: <none>
+  initial begin
+    // Wait 1 cycle(s).
+    @(posedge clk);
+    #1;
+    // Wait 10000 cycle(s).
+    repeat (9999) begin
+      @(posedge clk);
+    end
+    #1;
+    @(posedge clk);
+    #1;
+    $display("ERROR: timeout, simulation ran too long (10000 cycles).");
+    $finish;
+  end
+
+  // Thread `input driver`. Drives signals: a, b
+  reg __thread_input_driver_done;
+  initial begin
+    a = 32'dx;
+    b = 32'dx;
+    __thread_input_driver_done = 1'h0;
+
+    // Wait 1 cycle(s).
+    @(posedge clk);
+    #1;
+    a = 32'h0000_002a;
+    b = 32'h0000_0064;
+    // Wait 1 cycle(s).
+    @(posedge clk);
+    #1;
+    a = 32'h0000_00c8;
+    b = 32'h0000_012c;
+    // Wait 1 cycle(s).
+    @(posedge clk);
+    #1;
+
+    __thread_input_driver_done = 1'h1;
+  end
+
+  // Thread completion monitor.
+  initial begin
+    @(posedge clk);
+    #9;
+    while (!__thread_input_driver_done) begin
+      @(posedge clk);
+      #9;
+    end
+    @(posedge clk);
+    #1;
+    $finish;
+  end
+endmodule

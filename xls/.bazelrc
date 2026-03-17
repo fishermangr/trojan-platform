@@ -1,0 +1,103 @@
+common --enable_bzlmod
+common --enable_platform_specific_config
+
+# By default, Bazel compiles *.cc files for tests with -fPIC and for binaries
+# without it resulting in a large number of duplicate compilations.
+# The linker can deal with both, so we can always compile with -fPIC
+# and use the object files in dynamic (=tests) and static (=binaries) contexts.
+# (There might be a minimal overhead even in statically linked binaries. To
+# be benchmarked)
+common --force_pic
+
+# We require the lockfile to be up-to-date for the requested deps.
+# Read https://bazel.build/external/lockfile for more details and instructions
+# on how to update the lockfile.
+common:ci --lockfile_mode=error
+# Tell that this is an oss ci run. NB This only disables it on the every-cl run.
+build:ci --copt="-DXLS_IS_CI_RUN=1"
+
+# Disable automatic generation of __init__.py files. This allows
+# namespace packages (such as `google`) to work correctly.
+# https://github.com/bazelbuild/bazel/issues/10076
+build --incompatible_default_to_explicit_init_py=true
+
+# Mac settings
+# Use 10.13 as the minimum OS for host builds. This is needed to use
+# std::optional and absl::optional together, see
+# https://github.com/abseil/abseil-cpp/commit/512af68a1d397cd2cfa1ac9c6eca7694bf75f2b0.
+build:macos --host_macos_minimum_os=10.13
+build:macos --macos_minimum_os=10.13
+
+# Depending on the installation, clang or clang-tidy need to be told that
+# a c++ file is, indeed, containing c++ (bazel just invokes clang, not clang++)
+build --cxxopt "-xc++"                 --host_cxxopt "-xc++"
+
+# Enable default C++ extensions (required in switching to our packaged LLVM)
+build --copt "-D_DEFAULT_SOURCE=1"     --host_copt "-D_DEFAULT_SOURCE=1"
+
+# Tell that auto_ptr<> is not available. Needed for boost (still needed ?)
+build --copt "-D_HAS_AUTO_PTR_ETC=0"   --host_copt "-D_HAS_AUTO_PTR_ETC=0"
+
+# Turn warnings on...
+build --copt "-Wall"                   --host_copt "-Wall"
+build --copt "-Wextra"                 --host_copt "-Wextra"
+
+# Turn some specific warnings into errors.
+build --copt "-Werror=switch" --host_copt "-Werror=switch"
+build --copt "-Werror=return-type" --host_copt "-Werror=return-type"
+
+# ... and disable the warnings we're not interested in.
+build --copt "-Wno-sign-compare"       --host_copt "-Wno-sign-compare"
+build --copt "-Wno-comment"            --host_copt "-Wno-comment"
+build --copt "-Wno-unused-parameter"   --host_copt "-Wno-unused-parameter"
+build --copt "-Wno-unknown-pragmas"    --host_copt "-Wno-unknown-pragmas"
+build --copt "-Wno-missing-field-initializers" --host_copt "-Wno-missing-field-initializers"
+build --copt "-Wno-bitwise-instead-of-logical" --host_copt "-Wno-bitwise-instead-of-logical"
+build --copt "-Wno-nullability-completeness"   --host_copt "-Wno-nullability-completeness"
+
+# For 3rd party code: Disable warnings entirely.
+# They are not actionable and just create noise.
+build --per_file_copt=external/.*@-w
+build --host_per_file_copt=external/.*@-w
+
+# These warnings show up in 3rd party code headers that are included by
+# our targets and thus are reported even with -w. Explicitly disable.
+# Protobuf.
+build --copt "-Wno-deprecated-declarations" --host_copt "-Wno-deprecated-declarations"
+
+# hlslibs_ac_types.
+build --copt "-Wno-deprecated-copy-with-user-provided-copy" --host_copt "-Wno-deprecated-copy-with-user-provided-copy"
+
+# Use absl in googletest to work around
+# https://github.com/google/googletest/issues/4383
+build --define absl=1
+build --incompatible_enable_cc_toolchain_resolution
+build --@llvm-project//third-party:llvm_enable_zstd=false
+
+# Do not use some deps from or-tools
+build --@com_google_ortools//ortools/algorithms:with_scip=false
+build --@com_google_ortools//ortools/linear_solver:with_glpk=false
+build --@com_google_ortools//ortools/linear_solver:with_pdlp=false
+build --@com_google_ortools//ortools/linear_solver:with_scip=false
+
+# Settings for --config=asan address sanitizer build
+build:asan --strip=never
+build:asan --copt -fsanitize=address
+build:asan --copt -DADDRESS_SANITIZER
+build:asan --copt -O1
+build:asan --copt -g
+build:asan --copt -fno-omit-frame-pointer
+build:asan --linkopt -fsanitize=address
+
+# Use new-ish hermetic java (closure seems to care about this)
+common --tool_java_language_version=21
+common --tool_java_runtime_version=remotejdk_21
+
+# To regenerate this file (if needed), please run:
+#
+#  bazel run @com_google_fuzztest//bazel:setup_configs > fuzztest.bazelrc
+#
+try-import %workspace%/fuzztest.bazelrc
+
+# https://bazel.build/configure/best-practices#bazelrc-file
+try-import %workspace%/user.bazelrc

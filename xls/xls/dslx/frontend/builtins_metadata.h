@@ -1,0 +1,69 @@
+// Copyright 2021 The XLS Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef XLS_DSLX_FRONTEND_BUILTINS_METADATA_H_
+#define XLS_DSLX_FRONTEND_BUILTINS_METADATA_H_
+
+#include <string>
+#include <string_view>
+
+#include "absl/container/flat_hash_map.h"
+
+namespace xls::dslx {
+
+struct BuiltinsData {
+  // Indicates whether this builtin is represented in the AST as a "first class
+  // node" or as an invocation of a builtin name-definition. Most builtins don't
+  // need to be AST nodes and thus this is false by default, which is the most
+  // common case.
+  bool is_ast_node = false;
+
+  // Indicates whether this builtin requires an implicit token parameter when it
+  // is used/invoked within a function. For most builtins this is not required,
+  // but built-ins that demand a token like `assert!`, `cover!`, `fail!` etc do
+  // have this set.
+  bool requires_implicit_token = false;
+
+  // Indicates whether the builtin permits explicit parametric instantiation
+  // via angle brackets at the callsite; e.g. `zero!<T>()`.
+  //
+  // Defaults to false. Only a small subset of AST-node builtins (e.g. `zero!`,
+  // `all_ones!`) should set this to true. Non-AST builtins are not gated by
+  // this flag.
+  bool allows_explicit_parametrics = false;
+};
+
+// Map from the name of the parametric builtin function; e.g. `assert_eq` to a
+// struct that shows 1) whether the function requires the explicit-token calling
+// convention and 2) whether calls to the builtin are represented using a
+// dedicated type of AST node rather than an `Invocation` node.
+const absl::flat_hash_map<std::string, BuiltinsData>& GetParametricBuiltins();
+
+// Returns whether the identifier is a builtin parametric function (i.e. a key
+// in the `GetParametricBuiltins` map)
+// -- built-in functions are always available at the DSLX top level scope, but
+// are not implemented as AST nodes.
+//
+// Warning: prefer to use `IsBuiltinParametricNameRef()` over this function
+// wherever possible -- it's easy to forget to check that the name definition is
+// a `BuiltinNameDef` before testing the identifier.
+bool IsNameParametricBuiltin(std::string_view identifier);
+
+// Returns true if the identifier names an AST-node builtin that allows explicit
+// parametrics at the callsite (currently: zero!, all_ones!).
+bool IsAstNodeBuiltinWithExplicitParametrics(std::string_view identifier);
+
+}  // namespace xls::dslx
+
+#endif  // XLS_DSLX_FRONTEND_BUILTINS_METADATA_H_

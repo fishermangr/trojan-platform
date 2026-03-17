@@ -1,0 +1,430 @@
+#
+# Copyright 2025 The XLS Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# The default compound passes and pipeline for XLS
+
+# proto-file: xls/passes/optimization_pass_pipeline.proto
+# proto-message: OptimizationPipelineProto
+
+# LINT.Start
+compound_passes: [
+  {
+    long_name: "Simplification"
+    short_name: "simp"
+    passes: [
+      "ident_remove",
+      "const_fold",
+      "dce",
+      "canon",
+      "dce",
+      "basic_simp",
+      "dce",
+      "arith_simp",
+      "dce",
+      "comparison_simp",
+      "dce",
+      "table_switch",
+      "dce",
+      "recv_default",
+      "dce",
+      "select_simp",
+      "dce",
+      "dataflow",
+      "dce",
+      # We need to run these to ensure that reassociation will be able to
+      # accurately identify all zero/sign extends that can be reassociated
+      # through.
+      # TODO - https://github.com/google/xls/issues/3952: It would be nice not
+      # to need to run these so many times.
+      "bitslice_simp",
+      "dce",
+      "concat_simp",
+      "dce",
+      "reassociation",
+      "dce",
+      "const_fold",
+      "dce",
+      "narrow(Ternary)",
+      "dce",
+      "bitslice_simp",
+      "dce",
+      "concat_simp",
+      "dce",
+      "array_untuple",
+      "dce",
+      "dataflow",
+      "dce",
+      "strength_red",
+      "dce",
+      "array_simp",
+      "dce",
+      "cse",
+      "dce",
+      "basic_simp",
+      "dce",
+      "arith_simp",
+      "dce",
+      "narrow(Ternary)",
+      "dce",
+      "bool_simp",
+      "dce",
+      "token_simp",
+      "dce"
+    ]
+    comment:
+      "Standard simplification pipeline.\n"
+      "\n"
+      "This is run a large number of times and avoids many time-consuming analyses."
+  },
+  {
+    long_name: "Fixed-point Simplification"
+    short_name: "fixedpoint_simp"
+    passes: ["simp"]
+    fixedpoint: true
+    comment:
+      "Standard simplification pipeline.\n"
+      "\n"
+      "This is run to a fixedpoint and avoids many time-consuming analyses."
+  },
+  {
+    long_name: "Max-3 Simplification"
+    short_name: "simp(3)"
+    passes: ["simp"]
+    options: {
+      cap_opt_level: 3
+    }
+    comment:
+      "Standard simplification pipeline.\n"
+      "\n"
+      "Opt level is capped at 3"
+  },
+  {
+    long_name: "Max-2 Simplification"
+    short_name: "simp(2)"
+    passes: ["simp"]
+    options: {
+      cap_opt_level: 2
+    }
+    comment:
+      "Standard simplification pipeline.\n"
+      "\n"
+      "Opt level is capped at 2"
+  },
+  {
+    long_name: "Max-3 Fixed-point Simplification"
+    short_name: "fixedpoint_simp(3)"
+    passes: ["simp"]
+    fixedpoint: true
+    options: {
+      cap_opt_level: 3
+    }
+    comment:
+      "Standard simplification pipeline.\n"
+      "\n"
+      "Opt level is capped at 3"
+  },
+  {
+    long_name: "Max-2 Fixed-point Simplification"
+    short_name: "fixedpoint_simp(2)"
+    passes: ["simp"]
+    fixedpoint: true
+    options: {
+      cap_opt_level: 2
+    }
+    comment:
+      "Standard simplification pipeline.\n"
+      "\n"
+      "Opt level is capped at 2"
+  },
+  {
+    long_name: "Min-1 Max-2 Fixedpoint Simplification"
+    short_name: "fixedpoint_simp(>=1,<=2)"
+    passes: ["simp"]
+    fixedpoint: true
+    options: {
+      min_opt_level: 1
+      cap_opt_level: 2
+    }
+    comment:
+      "Standard simplification pipeline.\n"
+      "\n"
+      "Opt level is capped at 2 and skipped if less than 1"
+  },
+  {
+    long_name: "Min-1 Max-2 Simplification"
+    short_name: "simp(>=1,<=2)"
+    passes: ["simp"]
+    options: {
+      min_opt_level: 1
+      cap_opt_level: 2
+    }
+    comment:
+      "Standard simplification pipeline.\n"
+      "\n"
+      "Opt level is capped at 2 and skipped if less than 1"
+  },
+  {
+    long_name: "pre-inlining passes"
+    short_name: "pre-inlining"
+    passes: ["dfe", "dce", "simp(>=1,<=2)"]
+    comment: "Passes performed before each inlining."
+  },
+  {
+    long_name: "full function inlining passes"
+    short_name: "full-inlining"
+    passes: ["loop_unroll", "map_inlining", "inlining", "dfe"]
+    comment: "Fully inline all functions in a single step."
+  },
+  {
+    long_name: "leaf function inlining passes"
+    short_name: "one-leaf-inlining"
+    passes: ["loop_unroll", "map_inlining", "leaf-inlining", "dfe"]
+    comment: "inline one level of functions."
+  },
+  {
+    long_name: "Proc State Flattening"
+    short_name: "fixedpoint_proc_state_flattening"
+    passes: ["proc_state_array_flat", "proc_state_tuple_flat"]
+    fixedpoint: true
+    comment: "Prepare proc state for further analysis by removing arrays and tuples."
+  },
+  {
+    long_name: "canonicalize proc state representation"
+    short_name: "canonicalize_proc_state"
+    passes: [
+      # Flatten and optimize the proc state. Run tuple simplification to
+      # simplify tuple structures left over from flattening.
+      # TODO(meheff): Consider running proc state optimization more than once.
+      "fixedpoint_proc_state_flattening",
+      "proc_state_bits_shatter",
+      "proc_state_tuple_flat",
+      "ident_remove",
+      "dataflow",
+      "dce"
+    ]
+    comment:
+      "Bring proc-state representation to the canonical 'flat' representation"
+      "other passes expect."
+    fixedpoint: true
+  },
+  {
+    long_name: "post-inlining optimization passes"
+    short_name: "post-inlining-opt"
+    passes: [
+      "fixedpoint_simp(2)",
+      # We previously ran cond_spec(noBdd) as part of fixedpoint_simp, but found
+      # it was not beneficial and showed up as hot on profiles. There's some
+      # evidence that it is helpful for reducing memory usage, though, so we
+      # still run it once here.
+      "cond_spec(noBdd)",
+      "dce",
+      "bdd_simp(2)",
+      "dce",
+      "basic_simp",
+      "dce",
+      "bdd_cse",
+      # TODO(https://github.com/google/xls/issues/274): 2022/01/20 Remove this
+      # extra conditional specialization pass when the pipeline has been
+      # reorganized better follow a high level of abstraction down to low level.
+      "dce",
+      "cond_spec(Bdd)",
+      #
+      "dce",
+      "fixedpoint_simp(2)",
+      #
+      "narrow(OptionalContext)",
+      "dce",
+      "basic_simp",
+      "dce",
+      "arith_simp",
+      "dce",
+      "cse",
+      "sparsify_select",
+      "dce",
+      "useless_assert_remove",
+      "ram_rewrite",
+      "useless_io_remove",
+      "dce",
+      # Run ConditionalSpecializationPass before TokenDependencyPass to remove
+      # false data dependencies
+      "cond_spec(Bdd)",
+      "channel_legalization",
+      "token_dependency",
+      # Simplify for channel_legalization.
+      # TODO(rigge): revisit this now that channel legalization no longer adds
+      # an adapter proc.
+      "fixedpoint_simp(2)",
+      # Flatten and optimize the proc state. Run tuple simplification to
+      # simplify tuple structures left over from flattening.
+      # TODO(meheff): Consider running proc state optimization more than once.
+      # Separate out proc state then separate out non-synth stuff.
+      "canonicalize_proc_state",
+      "non_synth_separation",
+      "dce",
+      # Separate next values and do other simple optimization.
+      "next_value_opt",
+      "dce",
+      "fixedpoint_simp(2)",
+      #
+      "dce",
+      #
+      "proc_state_narrow",
+      "dce",
+      "proc_state_opt",
+      "dce",
+      #
+      "proc_state_provenance_narrow",
+      "dce",
+      "proc_state_opt",
+      "dce",
+      #
+      "bdd_simp(3)",
+      "dce",
+      "basic_simp",
+      "dce",
+      "bdd_cse",
+      "select_lifting",
+      "dce",
+      #
+      "lut_conversion",
+      "dce",
+      #
+      "cond_spec(Bdd)",
+      "dce",
+      #
+      "fixedpoint_simp(3)",
+      # Range based select simplification is heavier so we only do it once.
+      "select_range_simp",
+      "dce",
+      #
+      "fixedpoint_simp(3)",
+      #
+      "bdd_simp(3)",
+      "dce",
+      "basic_simp",
+      "dce",
+      "bdd_cse",
+      "dce",
+      #
+      "proc_state_bits_shatter",
+      "proc_state_tuple_flat",
+      "fixedpoint_simp(3)",
+      #
+      "useless_assert_remove",
+      "useless_io_remove",
+      "next_value_opt",
+      # TODO(allight): We might want another proc-narrowing pass here but it's
+      # not clear if it will be likely to find anything and we'd need more
+      # cleanup passes if we did to take advantage of the narrower state.
+      "proc_state_opt",
+      "dce",
+      #
+      "cond_spec(Bdd)",
+      "dce",
+      "select_merge",
+      "dce",
+      "fixedpoint_simp(3)"
+    ]
+    comment: "Passes performed after inlining"
+  },
+  # TODO(allight): Remove once we can configure individual passes.
+  {
+    long_name: "min-1 post-inlining optimization passes"
+    short_name: "post-inlining-opt(>=1)"
+    passes: ["post-inlining-opt"]
+    options: {
+      min_opt_level: 1
+    }
+    comment: "Passes performed after inlining"
+  },
+  {
+    long_name: "Post-inlining passes"
+    short_name: "post-inlining"
+    passes: ["post-inlining-opt(>=1)", "dce", "label-recovery", "resource_sharing"]
+    comment: "Passes performed after inlining"
+  },
+  {
+    long_name: "Iteratively inline and simplify"
+    short_name: "simplify-and-inline"
+    passes: ["pre-inlining", "one-leaf-inlining"]
+    fixedpoint: true
+    comment:
+      "Inlining segment of the pipeline\n"
+      "\n"
+      "This is performed to fixedpoint and each run a single layer of the function hierarchy is inlined away."
+  },
+  {
+    long_name: "scheduling opt passes"
+    short_name: "scheduling-opt"
+    passes: [
+      "fixedpoint_simp",
+      "dce",
+      # Undo non-synth separation.
+      "full-inlining",
+      "dce",
+      "dfe",
+      # Now that we can see more context actually remove dead asserts.
+      "useless_assert_remove",
+      "dce"
+    ]
+    options: {
+      min_opt_level: 1
+    }
+    comment:
+      "Passes performed immediately before starting scheduling.\n"
+      "\n"
+      "These optimizations are used to fix up any changes the mutual-exclusion "
+      "pass & proc-state legalize performs before the initial scheduling.\n"
+      "\n"
+      "TODO(allight): We might wish to move these into opt only. `sched` "
+      "running optimization passes is an artifact of how these tools evolved "
+      "which no longer makes too much sense. To do this will require making a "
+      "decision on how to handle 'mutual-exclusion opt' however."
+  },
+  {
+    long_name: "Prepare for scheduling optimization passes"
+    short_name: "prepare-for-scheduling"
+    passes: [
+      # Undo non-synth separation.
+      "full-inlining",
+      "dce",
+      "dfe",
+      # TODO(allight): Unclear if fixedpoint simp is what we want to use here.
+      # This is mostly to clean up extraneous bit-slice/concats etc.
+      "fixedpoint_simp",
+      "dce"
+    ]
+    options: {
+      min_opt_level: 1
+    }
+    comment:
+      "Passes performed at the very end of optimization.\n"
+      "\n"
+      "TODO(allight): We might want to move resource sharing into here for"
+      "organizational reasons.\n"
+      "\n"
+      "TODO(allight): The duplication between this and "
+      "[scheduling-opt](#scheduling-opt) is a massive code-smell. "
+      "Significant adjustments to codegen/sched pass pipelines are likely "
+      "required."
+  }
+]
+default_pipeline: [
+  "simplify-and-inline",
+  "post-inlining",
+  "prepare-for-scheduling"
+]
+
+# LINT.End

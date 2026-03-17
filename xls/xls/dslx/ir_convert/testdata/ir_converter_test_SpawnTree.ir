@@ -1,0 +1,76 @@
+package test_module
+
+file_number 0 "test_module.x"
+
+proc __test_module__third_0__16_64_next<>(__state: (bits[16], bits[64]), init={(1, 2)}) {
+  __state: (bits[16], bits[64]) = state_read(state_element=__state, id=2)
+  __token: token = literal(value=token, id=1)
+  literal.3: bits[1] = literal(value=1, id=3)
+  N: bits[32] = literal(value=64, id=4)
+  M: bits[32] = literal(value=16, id=5)
+  tuple.6: () = tuple(id=6)
+  next_value.7: () = next_value(param=__state, value=__state, id=7)
+}
+
+proc __test_module__third_0__32_64_next<>(__state: (bits[32], bits[64]), init={(1, 2)}) {
+  __state: (bits[32], bits[64]) = state_read(state_element=__state, id=9)
+  __token: token = literal(value=token, id=8)
+  literal.10: bits[1] = literal(value=1, id=10)
+  N: bits[32] = literal(value=64, id=11)
+  M: bits[32] = literal(value=32, id=12)
+  tuple.13: () = tuple(id=13)
+  next_value.14: () = next_value(param=__state, value=__state, id=14)
+}
+
+proc __test_module__second_0__64_next<>(__state: bits[64], init={3}) {
+  proc_instantiation __test_module__third_0__16_64_next_inst(proc=__test_module__third_0__16_64_next)
+  proc_instantiation __test_module__third_0__32_64_next_inst(proc=__test_module__third_0__32_64_next)
+  __state: bits[64] = state_read(state_element=__state, id=30)
+  __token: token = literal(value=token, id=29)
+  literal.31: bits[1] = literal(value=1, id=31)
+  N: bits[32] = literal(value=64, id=32)
+  tuple.33: () = tuple(id=33)
+  next_value.34: () = next_value(param=__state, value=__state, id=34)
+}
+
+proc __test_module__third_0__16_128_next<>(__state: (bits[16], bits[128]), init={(1, 0x2)}) {
+  __state: (bits[16], bits[128]) = state_read(state_element=__state, id=16)
+  __token: token = literal(value=token, id=15)
+  literal.17: bits[1] = literal(value=1, id=17)
+  N: bits[32] = literal(value=128, id=18)
+  M: bits[32] = literal(value=16, id=19)
+  tuple.20: () = tuple(id=20)
+  next_value.21: () = next_value(param=__state, value=__state, id=21)
+}
+
+proc __test_module__third_0__32_128_next<>(__state: (bits[32], bits[128]), init={(1, 0x2)}) {
+  __state: (bits[32], bits[128]) = state_read(state_element=__state, id=23)
+  __token: token = literal(value=token, id=22)
+  literal.24: bits[1] = literal(value=1, id=24)
+  N: bits[32] = literal(value=128, id=25)
+  M: bits[32] = literal(value=32, id=26)
+  tuple.27: () = tuple(id=27)
+  next_value.28: () = next_value(param=__state, value=__state, id=28)
+}
+
+proc __test_module__second_0__128_next<>(__state: bits[128], init={0x3}) {
+  proc_instantiation __test_module__third_0__16_128_next_inst(proc=__test_module__third_0__16_128_next)
+  proc_instantiation __test_module__third_0__32_128_next_inst(proc=__test_module__third_0__32_128_next)
+  __state: bits[128] = state_read(state_element=__state, id=36)
+  __token: token = literal(value=token, id=35)
+  literal.37: bits[1] = literal(value=1, id=37)
+  N: bits[32] = literal(value=128, id=38)
+  tuple.39: () = tuple(id=39)
+  next_value.40: () = next_value(param=__state, value=__state, id=40)
+}
+
+top proc __test_module__first_0_next<>(__state: (), init={()}) {
+  proc_instantiation __test_module__second_0__64_next_inst(proc=__test_module__second_0__64_next)
+  proc_instantiation __test_module__second_0__128_next_inst(proc=__test_module__second_0__128_next)
+  __state: () = state_read(state_element=__state, id=42)
+  tuple.45: () = tuple(id=45)
+  __token: token = literal(value=token, id=41)
+  literal.43: bits[1] = literal(value=1, id=43)
+  tuple.44: () = tuple(id=44)
+  next_value.46: () = next_value(param=__state, value=tuple.45, id=46)
+}

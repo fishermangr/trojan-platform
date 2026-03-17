@@ -1,0 +1,24 @@
+module foo_proc(
+  input wire [31:0] dir,
+  input wire [31:0] in,
+  input wire in_vld,
+  input wire out1_rdy,
+  input wire out2_rdy,
+  output wire in_rdy,
+  output wire [31:0] out1,
+  output wire out1_vld,
+  output wire [31:0] out2,
+  output wire out2_vld
+);
+  wire ctx_3__relative_condition_ctx_3__output__2;
+  wire ctx_3__relative_condition_ctx_3__output__3;
+  wire p0_all_active_outputs_ready;
+  assign ctx_3__relative_condition_ctx_3__output__2 = dir == 32'h0000_0000;
+  assign ctx_3__relative_condition_ctx_3__output__3 = ~ctx_3__relative_condition_ctx_3__output__2;
+  assign p0_all_active_outputs_ready = (~ctx_3__relative_condition_ctx_3__output__2 | out1_rdy) & (~ctx_3__relative_condition_ctx_3__output__3 | out2_rdy);
+  assign in_rdy = p0_all_active_outputs_ready;
+  assign out1 = in;
+  assign out1_vld = in_vld & 1'h1 & 1'h1 & ctx_3__relative_condition_ctx_3__output__2;
+  assign out2 = in;
+  assign out2_vld = in_vld & 1'h1 & 1'h1 & ctx_3__relative_condition_ctx_3__output__3;
+endmodule

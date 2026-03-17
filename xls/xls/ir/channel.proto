@@ -1,0 +1,56 @@
+// Copyright 2020 The XLS Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package xls;
+
+message FifoConfigProto {
+  optional int64 width = 1;
+  optional int64 depth = 2;
+  optional bool bypass = 3;
+  optional bool register_push_outputs = 4;
+  optional bool register_pop_outputs = 5;
+}
+
+// The kinds of flops a channels input/output may have.
+enum FlopKindProto {
+  // Use the default passed by codegen options
+  FLOP_KIND_DEFAULT = 0;
+  // The input/output is not flopped and is directly connected by wires.
+  FLOP_KIND_NONE = 1;
+  // Adds a pipeline stage at the beginning or end of the channel to hold
+  // inputs or outputs. This is essentially a single-element FIFO.
+  FLOP_KIND_FLOP = 2;
+  // Adds a skid buffer at the inputs or outputs of the channel. The skid
+  // buffer can hold 2 entries
+  FLOP_KIND_SKID = 3;
+  // Adds a zero-latency buffer at the beginning or end of the block. This is
+  // essentially a single-element FIFO with bypass
+  FLOP_KIND_ZERO_LATENCY = 4;
+}
+
+// Configuration for a single channel.
+message ChannelConfigProto {
+  // Configuration passed to the MaybeMaterializeFifosPass or the FIFO module
+  // instantiation to set up the actual verilog fifo backing the channel.
+  //
+  // It is an error to include this for non-streaming channels.
+  optional FifoConfigProto fifo = 1;
+
+  // Flop to put before all inputs associated with this channel.
+  FlopKindProto flop_inputs = 2;
+  // Flop to put before all outputs associated with this channel.
+  FlopKindProto flop_outputs = 3;
+}

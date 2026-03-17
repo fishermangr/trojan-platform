@@ -1,0 +1,587 @@
+// Copyright 2020 The XLS Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef XLS_IR_FUNCTION_BASE_H_
+#define XLS_IR_FUNCTION_BASE_H_
+
+#include <cstdint>
+#include <functional>
+#include <list>
+#include <memory>
+#include <optional>
+#include <ostream>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
+
+#include "absl/algorithm/container.h"
+#include "absl/base/no_destructor.h"
+#include "absl/base/optimization.h"
+#include "absl/container/btree_set.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
+#include "cppitertools/chain.hpp"
+#include "xls/common/iterator_range.h"
+#include "xls/common/status/status_macros.h"
+#include "xls/ir/change_listener.h"
+#include "xls/ir/dfs_visitor.h"
+#include "xls/ir/foreign_function_data.pb.h"
+#include "xls/ir/ir_annotator.h"
+#include "xls/ir/name_uniquer.h"
+#include "xls/ir/node.h"
+#include "xls/ir/nodes.h"
+#include "xls/ir/package.h"
+#include "xls/ir/unwrapping_iterator.h"
+#include "xls/ir/verify_node.h"
+
+namespace xls {
+
+class FunctionBase;
+class Function;
+class Proc;
+class ChannelInterface;
+class StateElement;
+class ProcInstantiation;
+
+// Represents a pipeline stage after scheduling.
+class Stage {
+ public:
+  Stage(Node* inputs_valid, Node* outputs_ready, Node* active_inputs_valid,
+        Node* outputs_valid)
+      : inputs_valid_(inputs_valid),
+        outputs_ready_(outputs_ready),
+        active_inputs_valid_(active_inputs_valid),
+        outputs_valid_(outputs_valid) {
+    CHECK_EQ(inputs_valid_ == nullptr, outputs_ready_ == nullptr);
+    CHECK_EQ(inputs_valid_ == nullptr, outputs_valid_ == nullptr);
+  }
+  Stage() : Stage(nullptr, nullptr, nullptr, nullptr) {}
+
+  Stage(const Stage& other) = default;
+  Stage& operator=(const Stage& other) = default;
+  Stage(Stage&& other) = default;
+  Stage& operator=(Stage&& other) = default;
+
+  // Returns the set of active inputs for this stage.
+  const absl::btree_set<Node*, Node::NodeIdLessThan>& active_inputs() const {
+    return active_inputs_;
+  }
+
+  // Returns the set of logic nodes for this stage.
+  const absl::btree_set<Node*, Node::NodeIdLessThan>& logic() const {
+    return logic_;
+  }
+
+  // Returns the set of active outputs for this stage.
+  const absl::btree_set<Node*, Node::NodeIdLessThan>& active_outputs() const {
+    return active_outputs_;
+  }
+
+  bool contains(Node* node) const;
+
+  bool AddNode(Node* node);
+  void erase(Node* node) {
+    active_inputs_.erase(node);
+    logic_.erase(node);
+    active_outputs_.erase(node);
+  }
+
+  inline auto begin() {
+    return iter::chain(active_inputs_, logic_, active_outputs_).begin();
+  }
+  inline auto begin() const {
+    return iter::chain(active_inputs_, logic_, active_outputs_).begin();
+  }
+  inline auto end() {
+    return iter::chain(active_inputs_, logic_, active_outputs_).end();
+  }
+  inline auto end() const {
+    return iter::chain(active_inputs_, logic_, active_outputs_).end();
+  }
+
+  absl::StatusOr<Stage> Clone(
+      const absl::flat_hash_map<Node*, Node*>& node_mapping) const;
+
+  bool IsControlled() const {
+    return inputs_valid_ != nullptr && outputs_ready_ != nullptr &&
+           active_inputs_valid_ != nullptr && outputs_valid_ != nullptr;
+  }
+
+  // Returns the node that signals whether it would be valid for this stage to
+  // execute; i.e., that all passive inputs are updated for the next activation.
+  Node* inputs_valid() const { return inputs_valid_; }
+
+  void set_inputs_valid(Node* inputs_valid) { inputs_valid_ = inputs_valid; }
+
+  // Returns the node that signals whether it is safe for this stage to execute;
+  // i.e., that the receiver for all passive outputs will have space to store
+  // the data.
+  Node* outputs_ready() const { return outputs_ready_; }
+
+  void set_outputs_ready(Node* outputs_ready) {
+    outputs_ready_ = outputs_ready;
+  }
+
+  // Returns the node that signals whether all active inputs to this stage are
+  // valid; i.e., that all active receives & all actively-read state values have
+  // the correct values for this activation.
+  Node* active_inputs_valid() const { return active_inputs_valid_; }
+
+  void set_active_inputs_valid(Node* active_inputs_valid) {
+    active_inputs_valid_ = active_inputs_valid;
+  }
+
+  // Returns the node that signals whether it would be safe for this stage to be
+  // done executing; i.e., that all logic nodes are updated by the current
+  // activation, and all active outputs have completed execution.
+  Node* outputs_valid() const { return outputs_valid_; }
+
+  void set_outputs_valid(Node* outputs_valid) {
+    outputs_valid_ = outputs_valid;
+  }
+
+  bool DependsOn(Node* node) const;
+
+ private:
+  absl::btree_set<Node*, Node::NodeIdLessThan> active_inputs_;
+  absl::btree_set<Node*, Node::NodeIdLessThan> logic_;
+  absl::btree_set<Node*, Node::NodeIdLessThan> active_outputs_;
+  Node* inputs_valid_ = nullptr;
+  Node* outputs_ready_ = nullptr;
+  Node* active_inputs_valid_ = nullptr;
+  Node* outputs_valid_ = nullptr;
+};
+
+// Base class for Functions and Procs. A holder of a set of nodes.
+class FunctionBase {
+ protected:
+  using NodeList = std::list<std::unique_ptr<Node>>;
+
+ public:
+  enum class Kind {
+    kFunction,
+    kProc,
+    kBlock,
+  };
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const Kind& k) {
+    switch (k) {
+      case Kind::kFunction:
+        absl::Format(&sink, "function");
+        return;
+      case Kind::kProc:
+        absl::Format(&sink, "proc");
+        return;
+      case Kind::kBlock:
+        absl::Format(&sink, "block");
+        return;
+    }
+    ABSL_UNREACHABLE();
+    absl::Format(&sink, "(unknown kind)");
+  }
+
+  FunctionBase(std::string_view name, Package* package)
+      : name_(name), package_(package) {}
+  FunctionBase(const FunctionBase& other) = delete;
+  void operator=(const FunctionBase& other) = delete;
+
+  virtual ~FunctionBase() {
+    for (ChangeListener* listener : change_listeners_) {
+      listener->FunctionBaseDeleted(this);
+    }
+  }
+
+  Package* package() const { return package_; }
+  const std::string& name() const { return name_; }
+  void SetName(std::string_view name) { name_ = name; }
+  std::string qualified_name() const {
+    return absl::StrCat(package_->name(), "::", name_);
+  }
+
+  std::optional<int64_t> GetInitiationInterval() const {
+    return initiation_interval_;
+  }
+
+  void SetInitiationInterval(int64_t ii) { initiation_interval_ = ii; }
+
+  void ClearInitiationInterval() { initiation_interval_ = std::nullopt; }
+
+  // Returns true if this is the top FunctionBase of the package.
+  bool IsTop() const { return package()->IsTop(this); }
+
+  // DumpIr emits the IR in a parsable, hierarchical text format.
+  virtual std::string DumpIr(const IrAnnotator& annotate) const = 0;
+  std::string DumpIr() const { return DumpIr(IrAnnotator{}); }
+
+  // Get the kind of function base this is as an enum.
+  virtual Kind kind() const = 0;
+
+  // Get FunctionBase attributes suitable for putting in #[...] in the IR.
+  virtual std::vector<std::string> AttributeIrStrings() const;
+
+  // Return Span of parameters.
+  absl::Span<Param* const> params() const { return params_; }
+
+  // Return the parameter at the given index.
+  Param* param(int64_t index) const { return params_.at(index); }
+
+  // Return the parameter with the given name.
+  absl::StatusOr<Param*> GetParamByName(std::string_view param_name) const;
+
+  absl::StatusOr<int64_t> GetParamIndex(Param* param) const;
+
+  absl::Span<Next* const> next_values() const { return next_values_; }
+
+  const absl::btree_set<Next*, Node::NodeIdLessThan>& next_values(
+      StateRead* state_read) const {
+    if (!next_values_by_state_read_.contains(state_read)) {
+      // This should be pretty rare. Basically this should only happen in the
+      // short time before the non-updated state element is replaced. Just
+      // returning what is actually there is nicer than crashing however. Do
+      // check that this is not just some sort of weird corruption however.
+      static const absl::NoDestructor<
+          absl::btree_set<Next*, Node::NodeIdLessThan>>
+          kEmptySet;
+      CHECK(absl::c_none_of(nodes(),
+                            [state_read](Node* n) {
+                              return n->Is<Next>() &&
+                                     n->As<Next>()->state_read() == state_read;
+                            }))
+          << "Invalid side table for next values. Missing " << state_read
+          << " in " << this;
+      return *kEmptySet;
+    }
+    return next_values_by_state_read_.at(state_read);
+  }
+
+  // Moves the given param to the given index in the parameter list.
+  absl::Status MoveParamToIndex(Param* param, int64_t index);
+
+  int64_t node_count() const { return nodes_.size(); }
+
+  // Expose Nodes, so that transformation passes can operate
+  // on this function.
+  xabsl::iterator_range<UnwrappingIterator<NodeList::iterator>> nodes() {
+    return xabsl::make_range(MakeUnwrappingIterator(nodes_.begin()),
+                             MakeUnwrappingIterator(nodes_.end()));
+  }
+  xabsl::iterator_range<UnwrappingIterator<NodeList::const_iterator>> nodes()
+      const {
+    return xabsl::make_range(MakeUnwrappingIterator(nodes_.begin()),
+                             MakeUnwrappingIterator(nodes_.end()));
+  }
+  xabsl::iterator_range<UnwrappingIterator<NodeList::reverse_iterator>>
+  nodes_reversed() {
+    return xabsl::make_range(MakeUnwrappingIterator(nodes_.rbegin()),
+                             MakeUnwrappingIterator(nodes_.rend()));
+  }
+  xabsl::iterator_range<UnwrappingIterator<NodeList::const_reverse_iterator>>
+  nodes_reversed() const {
+    return xabsl::make_range(MakeUnwrappingIterator(nodes_.rbegin()),
+                             MakeUnwrappingIterator(nodes_.rend()));
+  }
+
+  // Adds a node to the set owned by this function.
+  template <typename T>
+    requires(std::is_base_of_v<Node, T>)
+  T* AddNode(std::unique_ptr<T> n) {
+    T* ptr = n.get();
+    AddNodeInternal(std::move(n));
+    return ptr;
+  }
+
+  // Creates a new node and adds it to the function. NodeT is the node subclass
+  // (e.g., 'Param') and the variadic args are the constructor arguments with
+  // the exception of the final FunctionBase* argument. This method verifies the
+  // newly constructed node after it is added to the function. Returns a pointer
+  // to the newly constructed node.
+  template <typename NodeT, typename... Args>
+    requires(std::is_base_of_v<Node, NodeT>)
+  absl::StatusOr<NodeT*> MakeNode(Args&&... args) {
+    NodeT* new_node = AddNode(std::make_unique<NodeT>(
+        std::forward<Args>(args)..., /*name=*/"", this));
+    XLS_RETURN_IF_ERROR(VerifyNode(new_node));
+    return new_node;
+  }
+
+  template <typename NodeT, typename... Args>
+    requires(std::is_base_of_v<Node, NodeT>)
+  absl::StatusOr<NodeT*> MakeNodeWithName(Args&&... args) {
+    NodeT* new_node =
+        AddNode(std::make_unique<NodeT>(std::forward<Args>(args)..., this));
+    XLS_RETURN_IF_ERROR(VerifyNode(new_node));
+    return new_node;
+  }
+
+  // Find a node by its name, as generated by DumpIr.
+  std::optional<Node*> MaybeGetNode(std::string_view standard_node_name) const;
+  absl::StatusOr<Node*> GetNode(std::string_view standard_node_name) const;
+  bool HasNode(std::string_view standard_node_name) const {
+    return MaybeGetNode(standard_node_name).has_value();
+  }
+
+  // Find a node with the given id.
+  absl::StatusOr<Node*> GetNodeById(int64_t id) const;
+
+  // Removes the node from the function. The node must have no users.
+  // Warning: if you remove a parameter node via this method you will change the
+  // function type signature.
+  virtual absl::Status RemoveNode(Node* n);
+
+  // Visit all nodes (including nodes not reachable from the root) in the
+  // function using the given visitor.
+  absl::Status Accept(DfsVisitor* visitor);
+
+  // Sanitizes and uniquifies the given name using the function's name
+  // uniquer. Registers the uniquified name in the uniquer so it is not handed
+  // out again.
+  std::string UniquifyNodeName(std::string_view name) {
+    return node_name_uniquer_.GetSanitizedUniqueName(name);
+  }
+
+  // Returns whether this FunctionBase is a function, proc, or block.
+  bool IsFunction() const { return kind() == Kind::kFunction; }
+  bool IsProc() const { return kind() == Kind::kProc; }
+  bool IsBlock() const { return kind() == Kind::kBlock; }
+
+  // Returns true if `this` is either a proc or a partially lowered proc.
+  virtual bool HasEffectiveProc() const { return IsProc(); }
+
+  virtual bool IsScheduled() const { return false; }
+
+  const Function* AsFunctionOrDie() const;
+  Function* AsFunctionOrDie();
+  const Proc* AsProcOrDie() const;
+  Proc* AsProcOrDie();
+  const Block* AsBlockOrDie() const;
+  Block* AsBlockOrDie();
+
+  // Returns either `this` or the proc that `this` was partially lowered from.
+  virtual const Proc* GetEffectiveProcOrDie() const {
+    CHECK(false) << "No effective proc for FunctionBase: " << name();
+  }
+  virtual Proc* GetEffectiveProcOrDie() {
+    CHECK(false) << "No effective proc for FunctionBase: " << name();
+  }
+
+  // Returns the pipeline stages of the function base. Only callable on
+  // scheduled function bases.
+  absl::Span<const Stage> stages() const;
+  absl::Span<Stage> stages();
+
+  // Adds a stage to the function base. Only callable on scheduled function
+  // bases.
+  void AddStage(Stage stage);
+
+  // Adds `n` empty stages to the function base. Only callable on scheduled
+  // function bases (and not on blocks).
+  virtual void AddEmptyStages(int64_t n);
+
+  // Clears all stages from the function base. Only callable on scheduled
+  // function bases.
+  void ClearStages();
+
+  // Returns true if the given node is in a stage.
+  bool IsStaged(Node* node) const;
+
+  // Returns the index of the stage containing the given node.
+  absl::StatusOr<int64_t> GetStageIndex(Node* node) const;
+
+  // Adds a node to the specified stage.
+  absl::StatusOr<bool> AddNodeToStage(int64_t stage_index, Node* node);
+
+  // Creates a new node and adds it to the specified stage. NodeT is the node
+  // subclass (e.g., 'Param') and the variadic args are the constructor
+  // arguments with the exception of the final FunctionBase* argument. This
+  // method verifies the newly constructed node after it is added to the
+  // function. Returns a pointer to the newly constructed node.
+  template <typename NodeT, typename... Args>
+    requires(std::is_base_of_v<Node, NodeT>)
+  absl::StatusOr<NodeT*> MakeNodeInStage(int64_t stage_index, Args&&... args) {
+    XLS_ASSIGN_OR_RETURN(NodeT * new_node,
+                         MakeNode<NodeT>(std::forward<Args>(args)...));
+    XLS_ASSIGN_OR_RETURN(bool added, AddNodeToStage(stage_index, new_node));
+    CHECK(added);
+    return new_node;
+  }
+
+  template <typename NodeT, typename... Args>
+    requires(std::is_base_of_v<Node, NodeT>)
+  absl::StatusOr<NodeT*> MakeNodeWithNameInStage(int64_t stage_index,
+                                                 Args&&... args) {
+    XLS_ASSIGN_OR_RETURN(NodeT * new_node,
+                         MakeNodeWithName<NodeT>(std::forward<Args>(args)...));
+    XLS_ASSIGN_OR_RETURN(bool added, AddNodeToStage(stage_index, new_node));
+    CHECK(added);
+    return new_node;
+  }
+
+  // Returns true if the given node has implicit uses in the function. Implicit
+  // uses include return values of functions and the recurrent token/state in
+  // procs.
+  virtual bool HasImplicitUse(Node* node) const = 0;
+
+  // Set information about foreign function
+  void SetForeignFunctionData(const std::optional<ForeignFunctionData>& ff) {
+    foreign_function_ = ff;
+  }
+
+  // If this is to be expressed as foreign function call, returns the necessary
+  // call information.
+  const std::optional<xls::ForeignFunctionData>& ForeignFunctionData() const {
+    return foreign_function_;
+  }
+
+  absl::Span<ChangeListener* const> ChangeListeners() const {
+    return change_listeners_;
+  }
+  void RegisterChangeListener(ChangeListener* listener) {
+    change_listeners_.push_back(listener);
+  }
+  void UnregisterChangeListener(ChangeListener* listener) {
+    std::erase(change_listeners_, listener);
+  }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const FunctionBase& fb) {
+    absl::Format(&sink, "%s", fb.name());
+  }
+
+  // Comparator used for sorting by name.
+  static bool NameLessThan(const FunctionBase* a, const FunctionBase* b) {
+    return a->name() < b->name();
+  }
+
+  // Struct form for passing comparators as template arguments.
+  struct NameLessThan {
+    bool operator()(const FunctionBase* a, const FunctionBase* b) const {
+      return FunctionBase::NameLessThan(a, b);
+    }
+  };
+
+  // Rebuild any side tables (to the maximum extent possible) using only the
+  // node graph and unchangeable metadata.
+  // TODO(allgiht): This is a terrible API since you basically just need to know
+  // when it needs to be called. Ideally this should be called regularly in some
+  // fashion.
+  // TODO(allight): Significant parts of the function/proc/block is included in
+  // the 'unchangeable metadata' and some of it is actually pretty malleable. We
+  // should move to a more node-y future where almost all
+  // configuration/definition data is embedded in the node graph.
+  absl::Status RebuildSideTables();
+
+  // Moves only the actual logic from `other`; not the params, state elements,
+  // channels, or proc instantiations. The move includes the staging of the
+  // logic, if this is a scheduled entity.
+  void MoveLogicFrom(FunctionBase& other) {
+    MoveFrom(other, [](const Node* n) {
+      // We can't move Params because they're part of a function's interface.
+      // Procs broadly assume that StateReads will exist in a close 1-1
+      // association with their StateElements, so it's simpler to keep them
+      // together.
+      return !n->Is<Param>() && !n->Is<StateRead>();
+    });
+    other.next_values_by_state_read_.clear();
+    other.next_values_.clear();
+  }
+
+  // Indicates whether this is a skeletal source entity embedded in a scheduled
+  // block.
+  void SetIsBlockSource(bool value) { is_block_source_ = value; }
+
+  virtual bool Contains(const Node* node) const {
+    return node->function_base() == this;
+  }
+
+ protected:
+  void MoveFrom(FunctionBase& other,
+                std::function<bool(const Node*)> pred = nullptr);
+
+  // Moves the given node into this `FunctionBase` from another one. This is
+  // meant to be used as part of a larger transaction like
+  // `Function::MoveInterfaceFrom`, which later cleans up the state and param
+  // vectors of the old owner; therefore, it does not update those vectors.
+  void TakeOwnershipOfNode(std::unique_ptr<Node>&& node);
+
+  // Dumps the nodes in a `FunctionBase`. For scheduled entities, with scoping
+  // of the staged nodes. This is a helper for the DumpIr() implementation for
+  // these entities.
+  std::string DumpFunctionBaseNodes(
+      const IrAnnotator& annotate = IrAnnotator{}) const;
+
+  // Many function-types have side-tables that store various pieces of
+  // information. This function should, as much as possible, rebuild any using
+  // only data from the nodes. If data is missing or corrupted or a valid setup
+  // cannot be created then an error may be returned.
+  virtual absl::Status InternalRebuildSideTables() = 0;
+
+  // Rebuilds the node_to_stage_ map from the stages_.
+  virtual absl::Status RebuildStageSideTables();
+
+  // Internal virtual helper for adding a node. Returns a pointer to the newly
+  // added node.
+  virtual Node* AddNodeInternal(std::unique_ptr<Node> node);
+
+  // Returns a vector containing the reserved words in the IR.
+  static std::vector<std::string> GetIrReservedWords();
+
+  std::string name_;
+  Package* package_;
+  std::optional<int64_t> initiation_interval_;
+
+  // Store Nodes in std::list as they can be added and removed arbitrarily and
+  // we want a stable iteration order. Keep a map from instruction pointer to
+  // location in the list for fast lookup.
+  NodeList nodes_;
+  absl::flat_hash_map<const Node*, NodeList::iterator> node_iterators_;
+
+  std::vector<Param*> params_;
+  std::vector<Next*> next_values_;
+  absl::flat_hash_map<StateRead*, absl::btree_set<Next*, Node::NodeIdLessThan>>
+      next_values_by_state_read_;
+
+  NameUniquer node_name_uniquer_ =
+      NameUniquer(/*separator=*/"__", GetIrReservedWords());
+
+  std::optional<xls::ForeignFunctionData> foreign_function_;
+
+  std::vector<ChangeListener*> change_listeners_;
+
+  // Pipeline stages. Empty for unscheduled function bases.
+  std::vector<Stage> stages_;
+
+  // Maps nodes to their stage index.
+  absl::flat_hash_map<Node*, int64_t> node_to_stage_;
+
+  // Whether this `FunctionBase` is the embedded source entity of a scheduled
+  // block.
+  bool is_block_source_ = false;
+};
+
+inline absl::Span<ChangeListener* const> GetChangeListeners(
+    FunctionBase* function_base) {
+  return function_base->ChangeListeners();
+}
+
+std::ostream& operator<<(std::ostream& os, const FunctionBase& function);
+std::ostream& operator<<(std::ostream& os, const FunctionBase::Kind& kind);
+
+}  // namespace xls
+
+#endif  // XLS_IR_FUNCTION_BASE_H_

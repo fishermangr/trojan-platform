@@ -1,0 +1,115 @@
+// Copyright 2024 The XLS Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package xls;
+
+import "xls/ir/xls_ir_interface.proto";
+import "xls/ir/xls_type.proto";
+import "xls/jit/type_layout.proto";
+
+// Proto version of the jittedFunctionBase information needed to call a AOTd
+// function.
+message AotEntrypointProto {
+  enum XlsFunctionType {
+    INVALID = 0;
+    FUNCTION = 1;
+    PROC = 2;
+    BLOCK = 3;
+  }
+
+  // The identifier (package and function/proc/block name) in the XLS ir.
+  optional string xls_package_name = 1;
+  optional string xls_function_identifier = 2;
+  optional XlsFunctionType type = 22;
+
+  // Information for unpacked function.
+
+  // Symbol name for the unpacked function.
+  optional string function_symbol = 3;
+  repeated int64 input_buffer_sizes = 4;
+  // Preferred alignments of each input buffer
+  repeated int64 input_buffer_alignments = 5;
+  repeated int64 input_buffer_abi_alignments = 6;
+
+  repeated int64 output_buffer_sizes = 7;
+  repeated int64 output_buffer_alignments = 8;
+  repeated int64 output_buffer_abi_alignments = 9;
+
+  // Information for packed function
+
+  // Symbol name for the packed function (unset if no packed function was
+  // created).
+  optional string packed_function_symbol = 10;
+  repeated int64 packed_input_buffer_sizes = 11;
+  repeated int64 packed_output_buffer_sizes = 12;
+
+  // Common ABI information
+
+  // Temp buffer information
+  optional int64 temp_buffer_size = 13;
+  optional int64 temp_buffer_alignment = 14;
+
+  message FunctionMetadataProto {
+    PackageInterfaceProto.Function function_interface = 1;
+  }
+
+  message ProcMetadataProto {
+    PackageInterfaceProto.Proc proc_interface = 1;
+
+    // Map from continuation_point ids to the node ids they represent in the IR.
+    map<int64, int64> continuation_point_node_ids = 2;
+
+    // Map from the channel name to the queue index they are on in the compiled
+    // code.
+    map<string, int64> channel_queue_indices = 3;
+  }
+
+  message BlockMetadataProto {
+    PackageInterfaceProto.Block block_interface = 1;
+
+    // Register renames done to inline all blocks into a single mega-block
+    // suitable for compilation.
+    map<string, string> register_aliases = 2;
+    // Any registers added to implement things like fifos for simulation.
+    map<string, TypeProto> added_registers = 3;
+  }
+
+  oneof specialized_metadata_oneof {
+    FunctionMetadataProto function_metadata = 23;
+    ProcMetadataProto proc_metadata = 24;
+    BlockMetadataProto block_metadata = 25;
+  }
+
+  reserved 15, 16;
+
+  // If MSAN was compiled in.
+  optional bool has_msan = 17;
+
+  // Misc information
+  optional TypeLayoutsProto inputs_layout = 18;
+  optional TypeLayoutsProto outputs_layout = 19;
+  repeated string inputs_names = 20;
+  repeated string outputs_names = 21;
+}
+
+// A single object file can have entrypoints for many different targets. This is
+// a list of all of the targets contained.
+message AotPackageEntrypointsProto {
+  repeated AotEntrypointProto entrypoint = 1;
+
+  // The LLVM DataLayout used in this compile.
+  optional string data_layout = 2;
+}

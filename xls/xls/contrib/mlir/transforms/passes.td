@@ -1,0 +1,247 @@
+#ifndef MLIR_XLS_TRANSFORMS_PASSES
+#define MLIR_XLS_TRANSFORMS_PASSES
+
+include "mlir/Pass/PassBase.td"
+
+def ArithToXlsPass : Pass<"arith-to-xls", "::mlir::ModuleOp"> {
+  let summary = "Converts Arith ops to XLS ops";
+  let dependentDialects = [
+    "mlir::xls::XlsDialect",
+    "mlir::arith::ArithDialect",
+    "mlir::func::FuncDialect",
+    "mlir::math::MathDialect"
+  ];
+}
+
+def LowerCountedForPass : Pass<"xls-lower-for-ops", "::mlir::ModuleOp"> {
+  let summary = "Lowers ForOp to CountedForOp.";
+  let dependentDialects = [
+    "mlir::xls::XlsDialect",
+  ];
+}
+
+def MathToXlsPass : Pass<"math-to-xls", "::mlir::ModuleOp"> {
+  let summary = "Lower Math operations to XLS operations";
+  let description = [{
+    Pass that converts Math operations to the equivalent operations using
+    XLS operations and DSLX calls.
+  }];
+  let dependentDialects = ["mlir::xls::XlsDialect"];
+}
+
+def NormalizeXlsCallsPass : Pass<"normalize-xls-calls", "::mlir::ModuleOp"> {
+  let summary = "Normalize XLS calls across packages";
+  let description = [{
+    Normalizes XLS calls to reduce number of package import. Post this
+    pass there should be no XLS Call ops and only package imports,
+    functions with linkage and calls.
+  }];
+  let dependentDialects = ["mlir::func::FuncDialect"];
+}
+
+def ScalarizePass : Pass<"scalarize", "::mlir::ModuleOp"> {
+  let summary = "Scalarizes tensor XLS operations";
+  let dependentDialects = [
+    "mlir::xls::XlsDialect",
+    "mlir::func::FuncDialect",
+    "mlir::tensor::TensorDialect"
+  ];
+}
+
+def ScfToXlsPass : Pass<"scf-to-xls", "::mlir::ModuleOp"> {
+  let summary = "Converts SCF ops to XLS ops";
+  let dependentDialects = [
+    "mlir::xls::XlsDialect",
+    "mlir::arith::ArithDialect",
+    "mlir::func::FuncDialect",
+    "mlir::scf::SCFDialect"
+  ];
+}
+
+def IndexTypeConversionPass : Pass<"index-type-conversion", "mlir::ModuleOp"> {
+  let summary = "Convert index type to int type for any ops";
+  let description = [{
+    Pass that converts index type to int type for any ops.
+  }];
+  let dependentDialects = [
+    "mlir::xls::XlsDialect",
+    "mlir::arith::ArithDialect",
+  ];
+  let options = [
+    Option<"indexTypeBitWidth", "index-bitwidth", "unsigned",
+    /*default=*/"32",
+    "Specify the index type bit width">
+  ];
+}
+
+def ProcElaborationPass : Pass<"elaborate-procs", "mlir::ModuleOp"> {
+  let summary = "Elaborates sprocs into eprocs";
+  let description = [{
+    Pass that lowers (elaborates) sprocs into eprocs and instantiate_eproc ops.
+  }];
+  let dependentDialects = [
+    "mlir::xls::XlsDialect",
+  ];
+  let options = [
+    Option<"use_io_constraints_on_eprocs", "io-constraints", "bool",
+    /*default=*/"false",
+    "If true, enable the addition of io constraints during proc elaboration">
+  ];
+}
+
+def InstantiateEprocsPass : Pass<"instantiate-eprocs", "mlir::ModuleOp"> {
+  let summary = "Instantiates eprocs";
+  let description = [{
+    Pass that lowers instantiate_eproc ops into eprocs.
+  }];
+  let dependentDialects = [
+    "mlir::xls::XlsDialect",
+  ];
+}
+
+def ExpandMacroOpsPass : Pass<"expand-macro-ops", "mlir::ModuleOp"> {
+  let summary = "Expands macro ops such as ArrayUpdateSlice";
+  let description = [{
+    Pass that expands macro ops that are unsupported by translation.
+  }];
+  let dependentDialects = [
+    "mlir::xls::XlsDialect",
+  ];
+}
+
+def ArrayToBitsPass : Pass<"array-to-bits", "mlir::ModuleOp"> {
+  let summary = "Converts arrays to bitstrings";
+  let description = [{
+    Pass that converts array types to bitstrings (IntegerTypes). Must be run
+    after scalarization.
+
+    Use of this transform can help larger modules get through XLS optimizations
+    and verilog emission easier, but it should be used sparingly as XLS should
+    perform better optimizations on arrays.
+  }];
+  let dependentDialects = [
+    "mlir::xls::XlsDialect",
+    "mlir::arith::ArithDialect",
+  ];
+}
+
+def ProcifyLoopsPass : Pass<"procify-loops", "mlir::ModuleOp"> {
+  let summary = "Converts loops into sprocs";
+  let description = [{
+    Pass that converts xls.for loops into sprocs.
+
+    The body of each xls.for op is converted into an sproc, and the op is
+    replaced with a pair of `xls.ssend` and `xls.sblocking_recv` ops.
+
+    The pass is controlled by the dialect-specific "xls.unroll" boolean attribute.
+
+    xls.unroll=false will trigger this pass, xls.unroll=true will not.
+
+    The apply_by_default pass option controls what happens when the attribute is
+    not present.
+  }];
+  let dependentDialects = [
+    "mlir::xls::XlsDialect",
+    "mlir::scf::SCFDialect",
+    "mlir::arith::ArithDialect",
+    "mlir::affine::AffineDialect",
+  ];
+  let options = [
+    Option<"apply_by_default", "apply-by-default", "bool",
+    /*default=*/"false",
+    "Apply the pass by default if the attribute is not present">
+  ];
+}
+
+def OptimizeSpawnsPass : Pass<"optimize-spawns", "SprocOp"> {
+  let summary = "Optimizes spawn ops";
+  let description = [{
+    Optimizes away sends and receives to channels that are interior to multiple
+    spawns, or argument or result channels. For example:
+
+    ```
+      spawns {
+        chan X, Y;
+        spawn @y(X, Y);
+        chan A, B;
+        spawn @x(A, B);
+        yield X, Y, A, B;
+      }
+      next (A, B) {
+        ssend X;
+        %0 = sblocking_recv Y;
+        ssend %0 to A;  // Pointless recv/send pair, could be removed.
+        sblocking_recv B;
+        ... use B ...
+      }
+    ```
+
+    into:
+
+    ```
+      spawns {
+        chan X, Y;
+        spawn @y(X, Y);
+        chan B;
+        spawn @x(Y, B);  // Channel A is removed and replaced by Y.
+        yield X, B;
+      }
+      next (A, B) {
+        ssend X;
+        sblocking_recv B;
+        ... use B ...
+      }
+    ```
+  }];
+}
+
+def OptimizeUsingXlsPass : Pass<"optimize-using-xls", "::mlir::ModuleOp"> {
+  let summary = "Optimizes module using XLS.";
+  let description = [{
+    Optimizes an MLIR module in XLS dialect by translating to XLS IR, having XLS
+    optimize the resultant XLS IR and translating back to XLS dialect.
+
+    This pass is a coarse-grained optimization pass that converts the entire
+    module to XLS IR, runs the XLS optimizer, and then converts the module
+    back. This is intended for reuse/interleaving with other passes.
+  }];
+
+  let dependentDialects = [
+    "mlir::xls::XlsDialect",
+    "mlir::func::FuncDialect",
+  ];
+
+  let options = [
+    // TODO(jpienaar): Should this be the proto instead? Downside is it adds
+    // a dependency in the passes header on the proto, but is probably better
+    // as API to pass creation.
+    Option<"xls_pipeline", "xls-pipeline", "std::optional<std::string>",
+      /*default=*/"std::nullopt",
+      "XLS pass pipeline to apply to the module."
+    >
+  ];
+}
+
+def SkipEmptyTopEprocPass : Pass<"skip-empty-top-eproc", "::mlir::ModuleOp"> {
+  let summary = "Skips empty top eprocs.";
+  let description = [{
+    In a module with two eprocs, if the second one is empty, removes the
+    empty eproc and renames the other one to have the same name.
+  }];
+
+  let dependentDialects = [
+    "mlir::xls::XlsDialect",
+    "mlir::func::FuncDialect",
+  ];
+
+  let options = [
+    Option<"top_proc_name", "top-proc-name", "std::optional<std::string>",
+      /*default=*/"std::nullopt",
+      "When defined, and in a module with exactly two eprocs, if the eproc with"
+      " this name is empty, we erase it and give this name to the other eproc."
+    >
+  ];
+}
+
+
+#endif // MLIR_XLS_TRANSFORMS_PASSES

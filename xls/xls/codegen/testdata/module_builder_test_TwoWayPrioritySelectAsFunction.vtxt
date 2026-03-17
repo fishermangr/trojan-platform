@@ -1,0 +1,8 @@
+module TwoWayPrioritySelectAsFunction(
+  input wire s,
+  input wire [31:0] x,
+  input wire [31:0] d
+);
+  wire [31:0] priority_select;
+  assign priority_select = s ? x : d;
+endmodule

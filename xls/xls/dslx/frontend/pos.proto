@@ -1,0 +1,31 @@
+// Copyright 2025 The XLS Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+edition = "2023";
+
+package xls.dslx;
+
+// Proto representation of a `Pos` object, i.e. a position in a source file.
+message PosProto {
+  string filename = 1;
+  int32 lineno = 2;
+  int32 colno = 3;
+}
+
+// Proto representation of a `Span` object, i.e. a span of text in a source
+// file.
+message SpanProto {
+  PosProto start = 1;
+  PosProto limit = 2;
+}

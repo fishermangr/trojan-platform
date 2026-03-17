@@ -1,0 +1,318 @@
+// Copyright 2020 The XLS Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package xls.verilog;
+
+import "google/api/field_behavior.proto";
+import "xls/ir/channel.proto";
+import "xls/ir/foreign_function_data.proto";
+import "xls/ir/xls_type.proto";
+
+enum PortDirectionProto {
+  PORT_DIRECTION_INVALID = 0;
+  PORT_DIRECTION_INPUT = 1;
+  PORT_DIRECTION_OUTPUT = 2;
+}
+
+enum ChannelDirectionProto {
+  CHANNEL_DIRECTION_INVALID = 0;
+  CHANNEL_DIRECTION_RECEIVE = 1;
+  CHANNEL_DIRECTION_SEND = 2;
+}
+
+enum ChannelKindProto {
+  CHANNEL_KIND_INVALID = 0;
+  CHANNEL_KIND_STREAMING = 1;
+  CHANNEL_KIND_SINGLE_VALUE = 2;
+}
+
+enum ChannelFlowControlProto {
+  CHANNEL_FLOW_CONTROL_NONE = 0;
+  CHANNEL_FLOW_CONTROL_READY_VALID = 1;
+}
+
+// Data structure describing a port on a module.
+message PortProto {
+  optional PortDirectionProto direction = 1;
+  optional string name = 2;
+  // The width of a port may be zero corresponding to zero-width XLS data types
+  // such as empty tuples. These zero-width PortPorts have no corresponding port
+  // in the Verilog module as Verilog does not support zero-width data
+  // types. However, having zero-width PortProtos maintains a one-to-one
+  // correspondence between ports in the signature and parameters in the XLS
+  // function.
+  optional int64 width = 3;
+  optional TypeProto type = 4;
+}
+
+message StreamingChannelInterfaceProto {
+  optional ChannelFlowControlProto flow_control = 1;
+  optional string data_port_name = 2;
+  optional string ready_port_name = 3;
+  optional string valid_port_name = 4;
+}
+
+message SingleValueChannelInterfaceProto {
+  optional string data_port_name = 1;
+}
+
+// Data structure describing the ports and metadata of a channel which exists on
+// the interface of the module. This binds particular ports (data, ready, valid)
+// back to the metadata about the channel for which the port is created. This
+// proto is only used for channels which appear on the interface of
+// blocks/modules. Loopback channels which do not appear on the interface of
+// blocks/modules do not have associated ChannelInterfaceProtos.
+message ChannelInterfaceProto {
+  optional string channel_name = 1;
+  optional ChannelDirectionProto direction = 2;
+  optional TypeProto type = 3;
+  optional ChannelKindProto kind = 4;
+
+  oneof interface_oneof {
+    StreamingChannelInterfaceProto streaming = 5;
+    SingleValueChannelInterfaceProto single_value = 6;
+  }
+  optional FlopKindProto flop_kind = 7;
+
+  // The stage in which the send/receive is scheduled in the pipeline.
+  optional int64 stage = 8;
+}
+
+// Data structure describing a channel which is contained within a module. For
+// example, this proto may describe a channel represented by a FIFO
+// instantiation within the module.
+message ChannelProto {
+  optional string name = 1;
+  optional ChannelKindProto kind = 2;
+  optional ChannelFlowControlProto flow_control = 4;
+  optional TypeProto type = 9;
+  optional FifoConfigProto fifo_config = 8;
+
+  reserved 3;   // former supported_ops
+  reserved 10;  // former metadata
+  reserved 11;  // former channel_config
+}
+
+// A RW RAM port has a request side with a single address field, as well as
+// signals to drive a read or write request.
+message RamRWRequestProto {
+  optional string name = 1;
+  optional PortProto address = 2;
+  optional PortProto read_enable = 3;
+  optional PortProto write_enable = 4;
+  optional PortProto write_data = 5;
+  optional PortProto write_mask = 6;
+  optional PortProto read_mask = 7;
+}
+
+// A RW RAM port has a response side consisting of read data.
+message RamRWResponseProto {
+  optional string name = 1;
+  optional PortProto read_data = 2;
+}
+
+// A RW RAM port consists of a RW request and RW response.
+message RamRWPortProto {
+  optional RamRWRequestProto request = 1;
+  optional RamRWResponseProto response = 2;
+}
+
+// A 1RW RAM has a single RW port.
+message Ram1RWProto {
+  optional RamRWPortProto rw_port = 1;
+}
+
+// A "read" RAM port has a request side with address and enable fields.
+message RamRRequestProto {
+  optional string name = 1;
+  optional PortProto address = 2;
+  optional PortProto enable = 3;
+  optional PortProto mask = 4;
+}
+
+// A "read" RAM port has a response side with read data.
+message RamRResponseProto {
+  optional string name = 1;
+  optional PortProto data = 2;
+}
+
+// A "write" RAM port has a request side with address, data, and enable fields.
+message RamWRequestProto {
+  optional string name = 1;
+  optional PortProto address = 2;
+  optional PortProto data = 3;
+  optional PortProto enable = 4;
+  optional PortProto mask = 5;
+}
+
+// A "read" RAM port consists of a R request and R response.
+message RamRPortProto {
+  optional RamRRequestProto request = 1;
+  optional RamRResponseProto response = 2;
+}
+
+// A "write" RAM port consists of a W request and no response.
+message RamWPortProto {
+  optional RamWRequestProto request = 1;
+}
+
+// A 1R1W RAM has a read port and a write port.
+message Ram1R1WProto {
+  optional RamRPortProto r_port = 1;
+  optional RamWPortProto w_port = 2;
+}
+
+// A RAM is one of potentially many RAM kinds, each of which encapsulates
+// potentially many RAM ports. Each port may have a request and response side.
+message RamProto {
+  optional string name = 1;
+  oneof ram_oneof {
+    Ram1RWProto ram_1rw = 2;
+    Ram1R1WProto ram_1r1w = 3;
+  }
+}
+
+// Module produces its result in a fixed number of cycles without flow control.
+message FixedLatencyInterface {
+  // Latency (in number of cycles) to produce an output after being presented an
+  // input.
+  optional int64 latency = 1;
+}
+
+// Describes a "valid" signal control scheme of pipeline registers. A single bit
+// "valid" input is added to the module. This signal should be asserted when the
+// data input ports(s) to the module are driven. The valid signal is passed
+// along the pipeline registers and serves as the load enable for the pipeline
+// registers.
+message ValidProto {
+  // Input valid signal name to use on the module interface. Required.
+  optional string input_name = 1;
+
+  // Name for the "valid" output that has been passed through the pipe stages;
+  // i.e. the input_name signal presented at cycle 0 shows up at output_name
+  // after L cycles with a pipeline of latency L. If not specified then the
+  // valid signal is not output from the module.
+  optional string output_name = 2;
+}
+
+// Proto describing manual control scheme of pipeline registers. With this
+// control scheme, the module includes an input with one bit per stage in the
+// pipeline. Bit N of this input controls the load-enable of the pipeline
+// registers of the N-th pipeline stage.
+message ManualPipelineControl {
+  optional string input_name = 1;
+}
+
+// Describes how the pipeline registers are controlled.
+message PipelineControl {
+  oneof interface_oneof {
+    ValidProto valid = 1;
+    ManualPipelineControl manual = 2;
+  }
+}
+
+// Module with a pipelined device function.
+message PipelineInterface {
+  optional int64 latency = 1;
+  optional int64 initiation_interval = 2;
+
+  // Describes how the pipeline registers are controlled (load enables). If not
+  // specified then the registers are loaded every cycle.
+  optional PipelineControl pipeline_control = 3;
+}
+
+// Module with purely combinational logic.
+message CombinationalInterface {}
+
+// Module with an unknown interface protocol. The signature simply defines the
+// ports and perhaps clk/reset.
+message UnknownInterface {}
+
+message ResetProto {
+  optional string name = 1;
+  optional bool asynchronous = 2;
+  optional bool active_low = 3;
+  // Whether flops in the data path are reset by this reset signal. If false,
+  // only flops in the control path are reset (e.g., pipelined "valid" signal).
+  // TODO(meheff) 2021/04/21 Remove this field when pipeline generator is ported
+  // to the proc generator. Register resets are handled explicitly in this case.
+  optional bool reset_data_path = 4;
+}
+
+message BlockInstantiationProto {
+  optional string block_name = 2;
+  optional string instance_name = 3;
+  ModuleSignatureProto block_signature = 1;
+}
+
+message ExternInstantiationProto {
+  optional string module_name = 1;
+  repeated PortProto data_ports = 2;
+  optional ForeignFunctionData foreign_function_data = 3;
+}
+
+message FifoInstantiationProto {
+  optional string instance_name = 1 [(google.api.field_behavior) = REQUIRED];
+  // May not be set if the FIFO instantiation doesn't come from a channel.
+  optional string channel_name = 2 [(google.api.field_behavior) = OPTIONAL];
+  optional FifoConfigProto fifo_config = 3
+      [(google.api.field_behavior) = REQUIRED];
+  optional TypeProto type = 4 [(google.api.field_behavior) = REQUIRED];
+}
+
+message InstantiationProto {
+  oneof instantiation_oneof {
+    BlockInstantiationProto block_instantiation = 3;
+    ExternInstantiationProto extern_instantiation = 4;
+    FifoInstantiationProto fifo_instantiation = 5;
+  }
+}
+
+message ModuleSignatureProto {
+  // Name of the module.
+  optional string module_name = 1;
+
+  // The data ports of the module. This does not include control ports such as
+  // clk, ready/valid, etc.
+  repeated PortProto data_ports = 2;
+
+  // The channels defined within the module.
+  repeated ChannelProto channels = 12;
+
+  // Channels on the interface of the module.
+  repeated ChannelInterfaceProto channel_interfaces = 15;
+
+  // The RAM ports of the module. These start off as channels that get rewritten
+  // in a codegen pass. As they no longer resemble ordinary channels after the
+  // pass, we gather them here with a different proto to reflect that they drive
+  // RAMs.
+  repeated RamProto rams = 13;
+
+  // Name of the clock port (if any).
+  optional string clock_name = 3;
+
+  // Describes the reset signal (if any).
+  optional ResetProto reset = 4;
+
+  oneof interface_oneof {
+    FixedLatencyInterface fixed_latency = 5;
+    PipelineInterface pipeline = 7;
+    CombinationalInterface combinational = 8;
+    UnknownInterface unknown = 10;
+  }
+
+  repeated InstantiationProto instantiations = 14;
+}

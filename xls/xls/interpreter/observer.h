@@ -1,0 +1,112 @@
+// Copyright 2024 The XLS Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef XLS_INTERPRETER_OBSERVER_H_
+#define XLS_INTERPRETER_OBSERVER_H_
+
+#include <algorithm>
+#include <optional>
+#include <vector>
+
+#include "absl/container/flat_hash_map.h"
+#include "absl/types/span.h"
+#include "xls/ir/node.h"
+#include "xls/ir/value.h"
+
+namespace xls {
+
+class RuntimeObserver;
+// An observer which can be called for each node evaluated.
+class EvaluationObserver {
+ public:
+  virtual ~EvaluationObserver() = default;
+  virtual void NodeEvaluated(Node* n, const Value& v) = 0;
+
+  // Called at the beginning of a "tick" for whatever notion applies to the
+  // underlying evaluator. For a block, each tick is a single cycle. For a proc,
+  // each tick is a single call to proc.Tick().
+  virtual void Tick() = 0;
+
+  // Convert this to an observer capable of accepting jit values if possible.
+  virtual std::optional<RuntimeObserver*> AsRawObserver() {
+    return std::nullopt;
+  }
+};
+
+// Test observer that just collects every node value.
+class CollectingEvaluationObserver : public EvaluationObserver {
+ public:
+  void NodeEvaluated(Node* n, const Value& v) override {
+    values_.try_emplace(n).first->second.push_back(v);
+  }
+  // No-op for collecting observer.
+  void Tick() override {}
+
+  absl::flat_hash_map<Node*, std::vector<Value>>& values() { return values_; }
+
+ private:
+  absl::flat_hash_map<Node*, std::vector<Value>> values_;
+};
+
+// Forwards callbacks to multiple observers.
+class CompositeEvaluationObserver : public EvaluationObserver {
+ public:
+  CompositeEvaluationObserver() = default;
+  explicit CompositeEvaluationObserver(
+      absl::Span<EvaluationObserver* const> observers)
+      : observers_(observers.begin(), observers.end()) {}
+
+  void SetObservers(absl::Span<EvaluationObserver* const> observers) {
+    observers_.assign(observers.begin(), observers.end());
+  }
+
+  void AddObserver(EvaluationObserver* observer) {
+    if (observer == nullptr) {
+      return;
+    }
+    observers_.push_back(observer);
+  }
+
+  void RemoveObserver(EvaluationObserver* observer) {
+    auto it = std::find(observers_.begin(), observers_.end(), observer);
+    if (it != observers_.end()) {
+      observers_.erase(it);
+    }
+  }
+
+  absl::Span<EvaluationObserver* const> observers() const {
+    return absl::Span<EvaluationObserver* const>(observers_);
+  }
+
+  bool empty() const { return observers_.empty(); }
+
+  void NodeEvaluated(Node* n, const Value& v) override {
+    for (EvaluationObserver* observer : observers_) {
+      observer->NodeEvaluated(n, v);
+    }
+  }
+
+  void Tick() override {
+    for (EvaluationObserver* observer : observers_) {
+      observer->Tick();
+    }
+  }
+
+ private:
+  std::vector<EvaluationObserver*> observers_;
+};
+
+}  // namespace xls
+
+#endif  // XLS_INTERPRETER_OBSERVER_H_

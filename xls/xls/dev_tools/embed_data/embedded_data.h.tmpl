@@ -1,0 +1,9 @@
+#pragma once
+
+#include <cstdint>
+#include "absl/types/span.h"
+
+namespace {{embed.namespace}} {
+// Get the contents of {{embed.data_file}}.
+absl::Span<uint8_t const> {{embed.accessor}}();
+}  // namespace {{embed.namespace}}

@@ -1,0 +1,351 @@
+// Copyright 2022 The XLS Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Driver for the XLS AOT compilation process.
+// Uses the JIT to produce and object file, creates a header file and source to
+// wrap (i.e., simplify) execution of the generated code, and writes the trio to
+// disk.
+
+#include <cstdint>
+#include <filesystem>
+#include <iostream>
+#include <memory>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "llvm/include/llvm/IR/DataLayout.h"
+#include "llvm/include/llvm/IR/LLVMContext.h"
+#include "llvm/include/llvm/Support/raw_ostream.h"
+#include "google/protobuf/text_format.h"
+#include "xls/common/file/filesystem.h"
+#include "xls/common/init_xls.h"
+#include "xls/common/status/ret_check.h"
+#include "xls/common/status/status_macros.h"
+#include "xls/interpreter/evaluator_options.h"
+#include "xls/ir/block_elaboration.h"
+#include "xls/ir/function_base.h"
+#include "xls/ir/ir_parser.h"
+#include "xls/ir/package.h"
+#include "xls/jit/aot_entrypoint.h"
+#include "xls/jit/aot_entrypoint.pb.h"
+#include "xls/jit/block_jit.h"
+#include "xls/jit/function_base_jit.h"
+#include "xls/jit/function_jit.h"
+#include "xls/jit/jit_evaluator_options.h"
+#include "xls/jit/jit_proc_runtime.h"
+#include "xls/jit/llvm_compiler.h"
+#include "xls/jit/llvm_type_converter.h"
+#include "xls/jit/observer.h"
+#include "xls/jit/type_layout.pb.h"
+
+static constexpr std::string_view kUsage = R"(
+aot_compiler <flags>
+
+Compile the given IR file to an object file and a proto file.
+
+If --output_proto/--output_textproto is given and all of --output_object,
+--output_llvm_ir, --output_llvm_opt_ir, and --output_asm are not given, the
+compilation will not be performed and only the proto will be generated. This is
+significantly faster than performing the compilation and can be used to quickly
+check the output of the compiler.
+)";
+
+ABSL_FLAG(std::string, input, "", "Path to the IR to compile.");
+ABSL_FLAG(std::string, symbol_salt, "",
+          "Additional text to append to symbol names to ensure no collisions.");
+ABSL_FLAG(std::optional<std::string>, top, std::nullopt,
+          "IR function to compile. "
+          "If unspecified, the package top function will be used - "
+          "in that case, the package-scoping mangling will be removed.");
+ABSL_FLAG(std::optional<xls::FunctionBase::Kind>, top_type, std::nullopt,
+          "Type of top (FUNCTION/PROC/BLOCK)");
+ABSL_FLAG(std::optional<std::string>, output_object, std::nullopt,
+          "Path at which to write the output object file.");
+ABSL_FLAG(std::optional<std::string>, output_proto, std::nullopt,
+          "Path at which to write the AotPackageEntrypointsProto describing "
+          "the ABI of the generated object files.");
+ABSL_FLAG(std::optional<std::string>, output_textproto, std::nullopt,
+          "Path to write a textproto AotPackageEntrypointsProto describing the "
+          "ABI of the generated object file.");
+ABSL_FLAG(std::optional<std::string>, output_llvm_ir, std::nullopt,
+          "Path at which to write the output llvm file.");
+ABSL_FLAG(std::optional<std::string>, output_llvm_opt_ir, std::nullopt,
+          "Path at which to write the output optimized llvm file.");
+ABSL_FLAG(std::optional<std::string>, output_asm, std::nullopt,
+          "Path at which to write the output optimized llvm file.");
+ABSL_FLAG(int64_t, llvm_opt_level, xls::LlvmCompiler::kDefaultOptLevel,
+          "The optimization level to use for the LLVM optimizer.");
+
+#ifdef ABSL_HAVE_MEMORY_SANITIZER
+static constexpr bool kHasMsan = true;
+#else
+static constexpr bool kHasMsan = false;
+#endif
+ABSL_FLAG(bool, include_msan, kHasMsan,
+          "Whether to include msan calls in the jitted code. This *must* match "
+          "the configuration of the binary the jitted code is included in.");
+ABSL_FLAG(bool, enable_llvm_coverage, false,
+          "Whether to include llvm's 'trace-cmp' and 'inline-8bit-counters'"
+          "coverage instrumentation");
+
+namespace xls {
+bool AbslParseFlag(std::string_view flag_value, FunctionBase::Kind* kind,
+                   std::string* error) {
+  if (flag_value == "FUNCTION") {
+    *kind = FunctionBase::Kind::kFunction;
+    return true;
+  }
+  if (flag_value == "PROC") {
+    *kind = FunctionBase::Kind::kProc;
+    return true;
+  }
+  if (flag_value == "BLOCK") {
+    *kind = FunctionBase::Kind::kBlock;
+    return true;
+  }
+  *error = absl::StrFormat(
+      "Unknown FunctionBase::Kind: %s. Expected FUNCTION, PROC, or BLOCK.",
+      flag_value);
+  return false;
+}
+std::string AbslUnparseFlag(FunctionBase::Kind kind) {
+  switch (kind) {
+    case FunctionBase::Kind::kFunction:
+      return "FUNCTION";
+    case FunctionBase::Kind::kProc:
+      return "PROC";
+    case FunctionBase::Kind::kBlock:
+      return "BLOCK";
+  }
+}
+
+namespace {
+
+class IntermediatesObserver final : public JitObserver {
+ public:
+  explicit IntermediatesObserver(JitObserverRequests req) : requests_(req) {}
+  JitObserverRequests GetNotificationOptions() const override {
+    return requests_;
+  }
+  // Called when a LLVM module has been created and is ready for optimization
+  void UnoptimizedModule(const llvm::Module* module) override {
+    llvm::raw_string_ostream ostream(unoptimized_);
+    module->print(ostream, nullptr);
+  }
+  // Called when a LLVM module has been created and is ready for codegen
+  void OptimizedModule(const llvm::Module* module) override {
+    llvm::raw_string_ostream ostream(optimized_);
+    module->print(ostream, nullptr);
+  }
+  // Called when a LLVM module has been compiled with the asm code.
+  void AssemblyCodeString(const llvm::Module* module,
+                          std::string_view asm_code) override {
+    asm_ = asm_code;
+  }
+
+  std::string_view unoptimized_code() const { return unoptimized_; }
+  std::string_view optimized_code() const { return optimized_; }
+  std::string_view asm_code() const { return asm_; }
+
+ private:
+  JitObserverRequests requests_;
+  std::string unoptimized_;
+  std::string optimized_;
+  std::string asm_;
+};
+
+absl::StatusOr<FunctionBase*> GetFunctionBaseByNameOfKind(
+    Package* pkg, std::string_view top,
+    std::optional<FunctionBase::Kind> kind) {
+  if (!kind) {
+    return pkg->GetFunctionBaseByName(top);
+  }
+  switch (*kind) {
+    case FunctionBase::Kind::kFunction:
+      return pkg->GetFunction(top);
+    case FunctionBase::Kind::kProc:
+      return pkg->GetProc(top);
+    case FunctionBase::Kind::kBlock:
+      return pkg->GetBlock(top);
+  }
+}
+absl::Status RealMain(const std::string& input_ir_path,
+                      const std::optional<std::string>& top,
+                      const std::optional<std::string>& output_object_path,
+                      const std::optional<std::string>& output_proto_path,
+                      bool include_msan, int64_t llvm_opt_level,
+                      const std::optional<std::string>& output_textproto_path,
+                      const std::optional<std::string>& output_llvm_ir_path,
+                      const std::optional<std::string>& output_llvm_opt_ir_path,
+                      const std::optional<std::string>& output_asm_path,
+                      std::string_view symbol_salt,
+                      std::optional<FunctionBase::Kind> expected_kind) {
+  XLS_ASSIGN_OR_RETURN(std::string input_ir, GetFileContents(input_ir_path));
+  XLS_ASSIGN_OR_RETURN(std::unique_ptr<Package> package,
+                       Parser::ParsePackage(input_ir, input_ir_path));
+
+  FunctionBase* f;
+  std::string package_prefix = absl::StrCat("__", package->name(), "__");
+  if (!top || top->empty()) {
+    XLS_RET_CHECK(package->HasTop()) << "No top given.";
+    f = *package->GetTop();
+    if (expected_kind.has_value()) {
+      XLS_RET_CHECK_EQ(*expected_kind, f->kind())
+          << "Top function " << f->name() << " is not of kind "
+          << *expected_kind << "\n"
+          << f;
+    }
+  } else {
+    absl::StatusOr<FunctionBase*> maybe_f =
+        GetFunctionBaseByNameOfKind(package.get(), *top, expected_kind);
+    if (maybe_f.ok()) {
+      f = *maybe_f;
+    } else {
+      XLS_ASSIGN_OR_RETURN(
+          f, GetFunctionBaseByNameOfKind(package.get(),
+                                         absl::StrCat(package_prefix, *top),
+                                         expected_kind));
+    }
+  }
+  VLOG(1) << "Compiling function\n" << f->DumpIr();
+
+  std::optional<JitObjectCode> object_code;
+  bool generate_skeleton = !output_object_path && !output_llvm_ir_path &&
+                           !output_llvm_opt_ir_path && !output_asm_path;
+  bool only_unopt_llvm_ir = output_llvm_ir_path && !output_llvm_opt_ir_path &&
+                            !output_asm_path && !output_object_path;
+  IntermediatesObserver obs(
+      {.unoptimized_module =
+           output_llvm_ir_path.has_value() && !only_unopt_llvm_ir,
+       .optimized_module = output_llvm_opt_ir_path.has_value(),
+       .assembly_code_str = output_asm_path.has_value()});
+  JitEvaluatorOptions jit_opts;
+  jit_opts.set_opt_level(llvm_opt_level)
+      .set_jit_observer(&obs)
+      .set_symbol_salt(absl::GetFlag(FLAGS_symbol_salt))
+      .set_include_msan(include_msan)
+      .set_enable_llvm_coverage(absl::GetFlag(FLAGS_enable_llvm_coverage))
+      .set_generate_skeleton(generate_skeleton)
+      .set_generate_only_unopt_llvm_ir(only_unopt_llvm_ir);
+  if (f->IsFunction()) {
+    XLS_ASSIGN_OR_RETURN(
+        object_code, FunctionJit::CreateObjectCode(
+                         f->AsFunctionOrDie(), EvaluatorOptions(), jit_opts));
+  } else if (f->IsProc()) {
+    if (f->AsProcOrDie()->is_new_style_proc()) {
+      XLS_ASSIGN_OR_RETURN(object_code,
+                           CreateProcAotObjectCode(f->AsProcOrDie(), jit_opts));
+    } else {
+      // all procs
+      XLS_ASSIGN_OR_RETURN(object_code,
+                           CreateProcAotObjectCode(package.get(), jit_opts));
+    }
+  } else {
+    XLS_ASSIGN_OR_RETURN(BlockElaboration elab,
+                         BlockElaboration::Elaborate(f->AsBlockOrDie()));
+    XLS_ASSIGN_OR_RETURN(object_code,
+                         BlockJit::CreateObjectCode(elab, jit_opts));
+  }
+  if (output_object_path) {
+    XLS_RETURN_IF_ERROR(SetFileContents(
+        *output_object_path, std::string(object_code->object_code.begin(),
+                                         object_code->object_code.end())));
+  }
+
+  if (output_proto_path || output_textproto_path) {
+    AotPackageEntrypointsProto all_entrypoints;
+    *all_entrypoints.mutable_data_layout() =
+        object_code->data_layout.getStringRepresentation();
+
+    auto context = std::make_unique<llvm::LLVMContext>();
+    LlvmTypeConverter type_converter(context.get(), object_code->data_layout);
+    for (const FunctionEntrypoint& oc : object_code->entrypoints) {
+      XLS_ASSIGN_OR_RETURN(
+          *all_entrypoints.add_entrypoint(),
+          GenerateAotEntrypointProto(
+              object_code->package ? object_code->package.get() : package.get(),
+              oc, include_msan, type_converter));
+    }
+    if (output_textproto_path) {
+      std::string text;
+      XLS_RET_CHECK(google::protobuf::TextFormat::PrintToString(all_entrypoints, &text));
+      XLS_RETURN_IF_ERROR(SetFileContents(*output_textproto_path, text));
+    }
+    if (output_proto_path) {
+      XLS_RETURN_IF_ERROR(SetFileContents(*output_proto_path,
+                                          all_entrypoints.SerializeAsString()));
+    }
+  }
+  if (output_llvm_ir_path) {
+    if (only_unopt_llvm_ir) {
+      XLS_RETURN_IF_ERROR(SetFileContents(
+          *output_llvm_ir_path, std::string(object_code->object_code.begin(),
+                                            object_code->object_code.end())));
+    } else {
+      XLS_RETURN_IF_ERROR(
+          SetFileContents(*output_llvm_ir_path, obs.unoptimized_code()));
+    }
+  }
+  if (output_llvm_opt_ir_path) {
+    XLS_RETURN_IF_ERROR(
+        SetFileContents(*output_llvm_opt_ir_path, obs.optimized_code()));
+  }
+  if (output_asm_path) {
+    XLS_RETURN_IF_ERROR(SetFileContents(*output_asm_path, obs.asm_code()));
+  }
+
+  return absl::OkStatus();
+}
+
+}  // namespace
+}  // namespace xls
+
+int main(int argc, char** argv) {
+  xls::InitXls(kUsage, argc, argv);
+  std::string input_ir_path = absl::GetFlag(FLAGS_input);
+  QCHECK(!input_ir_path.empty()) << "--input must be specified.";
+
+  std::optional<std::string> top = absl::GetFlag(FLAGS_top);
+
+  std::optional<std::string> output_object_path =
+      absl::GetFlag(FLAGS_output_object);
+  std::optional<std::string> output_proto_path =
+      absl::GetFlag(FLAGS_output_proto);
+
+  bool include_msan = absl::GetFlag(FLAGS_include_msan);
+  std::optional<xls::FunctionBase::Kind> expected_kind =
+      absl::GetFlag(FLAGS_top_type);
+  absl::Status status = xls::RealMain(
+      input_ir_path, top, output_object_path, output_proto_path, include_msan,
+      absl::GetFlag(FLAGS_llvm_opt_level),
+      absl::GetFlag(FLAGS_output_textproto),
+      absl::GetFlag(FLAGS_output_llvm_ir),
+      absl::GetFlag(FLAGS_output_llvm_opt_ir), absl::GetFlag(FLAGS_output_asm),
+      absl::GetFlag(FLAGS_symbol_salt), expected_kind);
+  if (!status.ok()) {
+    std::cout << status.message();
+    return 1;
+  }
+
+  return 0;
+}
