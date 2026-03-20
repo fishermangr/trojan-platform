@@ -1,0 +1,22 @@
+{
+  "operation": "encrypt",
+  "key": "2b7e151628aed2a6abf7158809cf4f3c",
+  "timestamp": "20260320_150833",
+  "num_traces": 1,
+  "num_samples": 5000,
+  "sample_rate": "auto",
+  "clk_freq": 7370000,
+  "gain_db": 30.0,
+  "protocol": "SS2",
+  "mismatches": 0,
+  "data": [
+    {
+      "index": 0,
+      "plaintext": "851bc25734924cc80c1a8de64e2d6b1f",
+      "ciphertext_hw": "3851a41853cd1fa6a7209f1def252f21",
+      "ciphertext_sw": "3851a41853cd1fa6a7209f1def252f21",
+      "match": true
+    }
+  ],
+  "note": "Power traces are stored in the .mat file only (too large for JSON)."
+}

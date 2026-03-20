@@ -6,10 +6,9 @@ Remove git from ./AES and ./xls
 
 Create a repo in my github account and push the code to it.
 
-Create a new branch called seting-up-the-environment
-
 In a folder called ./AES-trojan, do the following:
 I want you to create a platform using:
+
 - Chipwhisperer husky (which is connected)
 - Google XLS (which is cloned and compiled)
 - Vivado (which is installed)
@@ -18,7 +17,7 @@ Google XLS will be used to generate RTL code from ./AES
 Vivado will be used to synthesize the RTL code and generate a bitstream using TCL scripts.
 The bitstream will be uploaded to the CW312-A35 Artix A7 35T through the CW313 board of the HUSKY.
 
-Create one script to perform HLS using Google XLS of the TinyAES C++ description. If necessary change the code of TinyAES so that it is 
+Create one script to perform HLS using Google XLS of the TinyAES C++ description. If necessary change the code of TinyAES so that it is
 synthesizable by Google XLS.
 One script to perform synthesis and implementation of the RTL code produced by Google XLSusing Vivado.
 One script to upload the bitstream to the CW312-A35 Artix A7 35T through the CW313 board of the HUSKY.
@@ -36,140 +35,10 @@ Place a trigger signifying to the HUSKY when to start sampling and when to stop 
 The HUSKY should be able to be configured regarding the sampling rate and all the relevant settings through the CLI.
 The power traces should be saved in the .mat file so that they correspond to the sent and received data.
 
+The FPGA should communicate with the pc through the simpleserial interface.
+
 Document everything.
 
 Do not stop unless it works perfectly.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+create in ./ a file called hls-trojens.md including hardware trojan ideas which can be inserted to the AES using a google xls pass. I need these trojans to be able to be detected using power traces analysis. Provide many ideas (at least 50).

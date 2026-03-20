@@ -1,0 +1,85 @@
+{
+  "operation": "encrypt",
+  "key": "2b7e151628aed2a6abf7158809cf4f3c",
+  "timestamp": "20260320_152254",
+  "num_traces": 10,
+  "num_samples": 5000,
+  "sample_rate": "auto",
+  "clk_freq": 7370000,
+  "gain_db": 30.0,
+  "protocol": "SS2",
+  "mismatches": 0,
+  "data": [
+    {
+      "index": 0,
+      "plaintext": "295f5b170c885c7953cab5090d3d84d8",
+      "ciphertext_hw": "58ce6c153122aaa29135d1511d34145b",
+      "ciphertext_sw": "58ce6c153122aaa29135d1511d34145b",
+      "match": true
+    },
+    {
+      "index": 1,
+      "plaintext": "91a5aa73c736f331f7d1550fcde122a1",
+      "ciphertext_hw": "227705423f91ef843585ac604023337c",
+      "ciphertext_sw": "227705423f91ef843585ac604023337c",
+      "match": true
+    },
+    {
+      "index": 2,
+      "plaintext": "d543fa08f30cf05a155e2d5a1ce699a0",
+      "ciphertext_hw": "c347e5d74b419725e61f5ebf495730aa",
+      "ciphertext_sw": "c347e5d74b419725e61f5ebf495730aa",
+      "match": true
+    },
+    {
+      "index": 3,
+      "plaintext": "c09c08bd7974ea991ff4c65018d18d03",
+      "ciphertext_hw": "bbc9b57331565ae4ce84b5a51ad598b7",
+      "ciphertext_sw": "bbc9b57331565ae4ce84b5a51ad598b7",
+      "match": true
+    },
+    {
+      "index": 4,
+      "plaintext": "599ad06ac87f5c88e686ea5dc0da7777",
+      "ciphertext_hw": "668ba3f7d2dbfad34dd132da6988ff05",
+      "ciphertext_sw": "668ba3f7d2dbfad34dd132da6988ff05",
+      "match": true
+    },
+    {
+      "index": 5,
+      "plaintext": "573eee94bb1c850c75425dc4bb1dd3f0",
+      "ciphertext_hw": "d0f163f100baedeba0cca85e92efc1ae",
+      "ciphertext_sw": "d0f163f100baedeba0cca85e92efc1ae",
+      "match": true
+    },
+    {
+      "index": 6,
+      "plaintext": "2762497faeb563d1f7729e821f8c6a2c",
+      "ciphertext_hw": "af43d7bbd88e3674a82eef1b89c6d52a",
+      "ciphertext_sw": "af43d7bbd88e3674a82eef1b89c6d52a",
+      "match": true
+    },
+    {
+      "index": 7,
+      "plaintext": "76ee9339e09b2393d46670501b4b0bb6",
+      "ciphertext_hw": "8ac98d88e564b477c4d8b6996ebb47a9",
+      "ciphertext_sw": "8ac98d88e564b477c4d8b6996ebb47a9",
+      "match": true
+    },
+    {
+      "index": 8,
+      "plaintext": "2fb923c3f979fbae33666d5537c864b8",
+      "ciphertext_hw": "d270e886bd420d90bc19a43bacf4d3e2",
+      "ciphertext_sw": "d270e886bd420d90bc19a43bacf4d3e2",
+      "match": true
+    },
+    {
+      "index": 9,
+      "plaintext": "bfd8475dd01c12f98f9f584ce2f28fc3",
+      "ciphertext_hw": "468cbd8c010617292ae73b64036aadeb",
+      "ciphertext_sw": "468cbd8c010617292ae73b64036aadeb",
+      "match": true
+    }
+  ],
+  "note": "Power traces are stored in the .mat file only (too large for JSON)."
+}

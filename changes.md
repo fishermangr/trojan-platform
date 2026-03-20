@@ -156,3 +156,60 @@ Every encryption now prints PT, CT_HW, CT_SW, and color-coded match status (gree
 
 ### Files Modified
 - `AES-trojan/python/cw_aes.py` — `run_encryption()`: print every trace with CT_HW + CT_SW comparison
+
+## 2026-03-20: AES-trojan-v2 — Project Restructuring
+
+### Summary
+Restructured the project into `AES-trojan-v2/` with clearer separation of concerns. All code is reused from `AES-trojan/` with updated internal paths.
+
+### New Structure
+```
+AES-trojan-v2/
+├── hls/           # HLS: src/, run_hls.py, output/ (IR artifacts)
+├── fpga/          # FPGA: rtl/, constraints/, scripts/synthesize.tcl, build/
+├── capture/       # Scripts: cw_aes.py, upload_bitstream.py, test_ss2.py
+├── results/       # Output data organized by experiment (via --results-dir)
+├── docs/          # README.md, commands.md
+└── requirements.txt
+```
+
+### Key Changes
+- **hls/**: Merged old `src/` and `hls/` — source + HLS script together; IR goes to `hls/output/`, generated RTL goes to `fpga/rtl/`
+- **fpga/**: Merged old `rtl/` and `vivado/` — RTL, constraints, build scripts, and build output all under one roof
+- **capture/**: Merged old `scripts/` and `python/` — all hardware communication scripts in one place
+- **results/**: Replaces old `data/` — `--results-dir` CLI flag lets you organize by experiment
+- **cw_aes.py**: New `--results-dir` flag; relative `--output-mat`/`--output-json` placed inside results dir
+- **synthesize.tcl**: Updated paths (`fpga_root` → constraints in `constraints/`, build in `build/`)
+- **run_hls.py**: `src_dir` defaults to `hls/src/`, output defaults to `../fpga/rtl/`, IR artifacts to `hls/output/`
+
+### Files Created
+- `AES-trojan-v2/hls/run_hls.py`
+- `AES-trojan-v2/fpga/scripts/synthesize.tcl`
+- `AES-trojan-v2/capture/cw_aes.py`
+- `AES-trojan-v2/capture/upload_bitstream.py`
+- `AES-trojan-v2/capture/test_ss2.py`
+- `AES-trojan-v2/docs/README.md`
+- `AES-trojan-v2/docs/commands.md`
+- All RTL, constraints, and source files copied from AES-trojan
+
+## 2026-03-20: Power Trace Explorer GUI
+
+### Summary
+Created an interactive PyQt5 + matplotlib GUI for exploring captured power traces, plaintexts, and ciphertexts from `.mat` result files.
+
+### Features
+- Pan/zoom/box-select via matplotlib navigation toolbar
+- Per-trace checkboxes to show/hide individual traces
+- Click a trace to highlight it and view PT, CT_HW, CT_SW, match status
+- Select All / Deselect All / Invert / Show Range buttons
+- Mean trace overlay toggle
+- Crosshair with sample index and amplitude readout
+- Adjustable trace opacity
+- Export visible traces to new .mat file
+- Color-coded match status (green ✓ / red ✗) in trace list
+
+### Files Created
+- `AES-trojan-v2/results/explore_traces.py`
+
+### Files Modified
+- `AES-trojan-v2/requirements.txt` — added `matplotlib>=3.7.0`, `PyQt5>=5.15.0`
