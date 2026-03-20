@@ -1,0 +1,1811 @@
+#-----------------------------------------------------------
+# Vivado v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 12:34:56 MST 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Fri Mar 20 14:00:29 2026
+# Process ID         : 28080
+# Current directory  : /home/tnsai/ws/trojan/AES-trojan
+# Command line       : vivado -mode batch -source /home/tnsai/ws/trojan/AES-trojan/vivado/synthesize.tcl
+# Log file           : /home/tnsai/ws/trojan/AES-trojan/vivado.log
+# Journal file       : /home/tnsai/ws/trojan/AES-trojan/vivado.jou
+# Running On         : tnsai-Z390-AORUS-PRO-WIFI
+# Platform           : Ubuntu
+# Operating System   : Ubuntu 22.04.5 LTS
+# Processor Detail   : Intel(R) Core(TM) i5-9600K CPU @ 3.70GHz
+# CPU Frequency      : 4299.954 MHz
+# CPU Physical cores : 6
+# CPU Logical cores  : 6
+# Host memory        : 67357 MB
+# Swap memory        : 2147 MB
+# Total Virtual      : 69505 MB
+# Available Virtual  : 53641 MB
+#-----------------------------------------------------------
+source /home/tnsai/ws/trojan/AES-trojan/vivado/synthesize.tcl
+# set script_dir [file dirname [file normalize [info script]]]
+# set project_root [file normalize [file join $script_dir ".."]]
+# set rtl_dir    [file join $project_root "rtl"]
+# set cw_dir     [file join $project_root "rtl" "cw"]
+# set xdc_file   [file join $script_dir "cw312_a35.xdc"]
+# set output_dir [file join $project_root "build"]
+# set part       "xc7a35tcsg324-1"
+# set top_module "ss2_aes_wrapper"
+# for {set i 0} {$i < [llength $argv]} {incr i} {
+#     set arg [lindex $argv $i]
+#     switch -- $arg {
+#         "--rtl_dir"    { incr i; set rtl_dir    [lindex $argv $i] }
+#         "--xdc_file"   { incr i; set xdc_file   [lindex $argv $i] }
+#         "--output_dir" { incr i; set output_dir  [lindex $argv $i] }
+#         "--part"       { incr i; set part        [lindex $argv $i] }
+#         "--top"        { incr i; set top_module  [lindex $argv $i] }
+#     }
+# }
+# puts "============================================================"
+============================================================
+# puts " Vivado Synthesis & Implementation for CW312-A35"
+ Vivado Synthesis & Implementation for CW312-A35
+# puts "============================================================"
+============================================================
+# puts " RTL dir:    $rtl_dir"
+ RTL dir:    /home/tnsai/ws/trojan/AES-trojan/rtl
+# puts " XDC file:   $xdc_file"
+ XDC file:   /home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc
+# puts " Output dir: $output_dir"
+ Output dir: /home/tnsai/ws/trojan/AES-trojan/build
+# puts " Part:       $part"
+ Part:       xc7a35tcsg324-1
+# puts " Top module: $top_module"
+ Top module: ss2_aes_wrapper
+# puts "============================================================"
+============================================================
+# file mkdir $output_dir
+# create_project -in_memory -part $part
+# set cw_files [glob -nocomplain [file join $cw_dir "*.v"]]
+# foreach f $cw_files {
+#     puts "  Reading CW: $f"
+#     read_verilog $f
+# }
+  Reading CW: /home/tnsai/ws/trojan/AES-trojan/rtl/cw/ss2_aes_wrapper.v
+  Reading CW: /home/tnsai/ws/trojan/AES-trojan/rtl/cw/cw305_reg_aes.v
+  Reading CW: /home/tnsai/ws/trojan/AES-trojan/rtl/cw/cw305_top.v
+  Reading CW: /home/tnsai/ws/trojan/AES-trojan/rtl/cw/crc_ss2.v
+  Reading CW: /home/tnsai/ws/trojan/AES-trojan/rtl/cw/cdc_pulse.v
+  Reading CW: /home/tnsai/ws/trojan/AES-trojan/rtl/cw/cw305_usb_reg_fe.v
+  Reading CW: /home/tnsai/ws/trojan/AES-trojan/rtl/cw/cw305_aes_defines.v
+  Reading CW: /home/tnsai/ws/trojan/AES-trojan/rtl/cw/uart_core.v
+  Reading CW: /home/tnsai/ws/trojan/AES-trojan/rtl/cw/clocks.v
+  Reading CW: /home/tnsai/ws/trojan/AES-trojan/rtl/cw/fifo_sync.v
+  Reading CW: /home/tnsai/ws/trojan/AES-trojan/rtl/cw/ss2.v
+# set rtl_v_files [glob -nocomplain [file join $rtl_dir "*.v"]]
+# foreach f $rtl_v_files {
+#     puts "  Reading RTL: $f"
+#     read_verilog $f
+# }
+  Reading RTL: /home/tnsai/ws/trojan/AES-trojan/rtl/xls_aes_adapter.v
+# set sv_files [glob -nocomplain [file join $rtl_dir "*.sv"]]
+# foreach f $sv_files {
+#     puts "  Reading SV: $f"
+#     read_verilog -sv $f
+# }
+  Reading SV: /home/tnsai/ws/trojan/AES-trojan/rtl/aes_128.sv
+# if {[llength $cw_files] == 0} {
+#     puts "ERROR: No CW reference files found in $cw_dir"
+#     exit 1
+# }
+# if {[llength $sv_files] == 0} {
+#     puts "ERROR: No SystemVerilog files found in $rtl_dir (need aes_128.sv)"
+#     puts "  Run the HLS script first: python3 hls/run_hls.py"
+#     exit 1
+# }
+# if {![file exists $xdc_file]} {
+#     puts "ERROR: XDC file not found: $xdc_file"
+#     exit 1
+# }
+# puts "  Reading constraints: $xdc_file"
+  Reading constraints: /home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc
+# read_xdc $xdc_file
+# puts "\n============================================================"
+
+============================================================
+# puts " Running Synthesis..."
+ Running Synthesis...
+# puts "============================================================"
+============================================================
+# synth_design -top $top_module -part $part -flatten_hierarchy rebuilt \
+#     -verilog_define SS2_WRAPPER -verilog_define XLS_AES
+Command: synth_design -top ss2_aes_wrapper -part xc7a35tcsg324-1 -flatten_hierarchy rebuilt -verilog_define SS2_WRAPPER -verilog_define XLS_AES
+Starting synth_design
+Attempting to get a license for feature 'Synthesis' and/or device 'xc7a35t'
+INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xc7a35t'
+INFO: [Device 21-403] Loading part xc7a35tcsg324-1
+INFO: [Synth 8-7079] Multithreading enabled for synth_design using a maximum of 7 processes.
+INFO: [Synth 8-7078] Launching helper process for spawning children vivado processes
+INFO: [Synth 8-7075] Helper process launched with PID 28129
+---------------------------------------------------------------------------------
+Starting RTL Elaboration : Time (s): cpu = 00:00:04 ; elapsed = 00:00:04 . Memory (MB): peak = 2189.254 ; gain = 482.875 ; free physical = 24565 ; free virtual = 49274
+---------------------------------------------------------------------------------
+WARNING: [Synth 8-6901] identifier 'erx_ctrl_reg' is used before its declaration [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/uart_core.v:105]
+WARNING: [Synth 8-6901] identifier 'pS_TX_IDLE' is used before its declaration [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/ss2.v:101]
+WARNING: [Synth 8-6901] identifier 'clear_rx_errors' is used before its declaration [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/ss2.v:164]
+WARNING: [Synth 8-6901] identifier 'clear_rx_errors' is used before its declaration [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/ss2.v:186]
+INFO: [Synth 8-6157] synthesizing module 'ss2_aes_wrapper' [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/ss2_aes_wrapper.v:25]
+INFO: [Synth 8-6157] synthesizing module 'ss2' [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/ss2.v:25]
+	Parameter pBIT_RATE bound to: 32 - type: integer 
+	Parameter pDATA_BITS bound to: 8 - type: integer 
+	Parameter pSTOP_BITS bound to: 1 - type: integer 
+	Parameter pPARITY_BITS bound to: 0 - type: integer 
+	Parameter pPARITY_ENABLED bound to: 0 - type: integer 
+INFO: [Synth 8-155] case statement is not full and has no default [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/ss2.v:134]
+INFO: [Synth 8-155] case statement is not full and has no default [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/ss2.v:199]
+INFO: [Synth 8-155] case statement is not full and has no default [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/ss2.v:305]
+INFO: [Synth 8-155] case statement is not full and has no default [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/ss2.v:330]
+INFO: [Synth 8-155] case statement is not full and has no default [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/ss2.v:356]
+INFO: [Synth 8-6157] synthesizing module 'crc_ss2' [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/crc_ss2.v:25]
+INFO: [Synth 8-6155] done synthesizing module 'crc_ss2' (0#1) [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/crc_ss2.v:25]
+INFO: [Synth 8-6157] synthesizing module 'uart_core' [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/uart_core.v:58]
+INFO: [Synth 8-6155] done synthesizing module 'uart_core' (0#1) [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/uart_core.v:58]
+INFO: [Synth 8-6157] synthesizing module 'fifo_sync' [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/fifo_sync.v:25]
+	Parameter pDATA_WIDTH bound to: 8 - type: integer 
+	Parameter pDEPTH bound to: 256 - type: integer 
+	Parameter pFALLTHROUGH bound to: 1 - type: integer 
+	Parameter pFLOPS bound to: 1 - type: integer 
+	Parameter pBRAM bound to: 0 - type: integer 
+	Parameter pDISTRIBUTED bound to: 0 - type: integer 
+INFO: [Synth 8-6155] done synthesizing module 'fifo_sync' (0#1) [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/fifo_sync.v:25]
+INFO: [Synth 8-6155] done synthesizing module 'ss2' (0#1) [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/ss2.v:25]
+INFO: [Synth 8-6157] synthesizing module 'cw305_top' [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/cw305_top.v:32]
+	Parameter pBYTECNT_SIZE bound to: 8 - type: integer 
+	Parameter pADDR_WIDTH bound to: 32 - type: integer 
+INFO: [Synth 8-6157] synthesizing module 'cw305_usb_reg_fe' [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/cw305_usb_reg_fe.v:31]
+	Parameter pADDR_WIDTH bound to: 32 - type: integer 
+	Parameter pBYTECNT_SIZE bound to: 8 - type: integer 
+INFO: [Synth 8-6155] done synthesizing module 'cw305_usb_reg_fe' (0#1) [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/cw305_usb_reg_fe.v:31]
+INFO: [Synth 8-6157] synthesizing module 'cw305_reg_aes' [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/cw305_reg_aes.v:33]
+	Parameter pADDR_WIDTH bound to: 32 - type: integer 
+	Parameter pBYTECNT_SIZE bound to: 8 - type: integer 
+	Parameter pPT_WIDTH bound to: 128 - type: integer 
+	Parameter pCT_WIDTH bound to: 128 - type: integer 
+	Parameter pKEY_WIDTH bound to: 128 - type: integer 
+INFO: [Synth 8-155] case statement is not full and has no default [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/cw305_reg_aes.v:182]
+INFO: [Synth 8-6157] synthesizing module 'cdc_pulse' [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/cdc_pulse.v:24]
+INFO: [Synth 8-6155] done synthesizing module 'cdc_pulse' (0#1) [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/cdc_pulse.v:24]
+INFO: [Synth 8-6157] synthesizing module 'USR_ACCESSE2' [/opt/Xilinx/2025.2/Vivado/scripts/rt/data/unisim_comp.v:168979]
+INFO: [Synth 8-6155] done synthesizing module 'USR_ACCESSE2' (0#1) [/opt/Xilinx/2025.2/Vivado/scripts/rt/data/unisim_comp.v:168979]
+INFO: [Synth 8-6155] done synthesizing module 'cw305_reg_aes' (0#1) [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/cw305_reg_aes.v:33]
+INFO: [Synth 8-6157] synthesizing module 'clocks' [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/clocks.v:32]
+INFO: [Synth 8-6157] synthesizing module 'BUFGMUX_CTRL' [/opt/Xilinx/2025.2/Vivado/scripts/rt/data/unisim_comp.v:2807]
+INFO: [Synth 8-6155] done synthesizing module 'BUFGMUX_CTRL' (0#1) [/opt/Xilinx/2025.2/Vivado/scripts/rt/data/unisim_comp.v:2807]
+INFO: [Synth 8-6157] synthesizing module 'ODDR' [/opt/Xilinx/2025.2/Vivado/scripts/rt/data/unisim_comp.v:117225]
+INFO: [Synth 8-6155] done synthesizing module 'ODDR' (0#1) [/opt/Xilinx/2025.2/Vivado/scripts/rt/data/unisim_comp.v:117225]
+INFO: [Synth 8-6157] synthesizing module 'IBUFG' [/opt/Xilinx/2025.2/Vivado/scripts/rt/data/unisim_comp.v:83453]
+INFO: [Synth 8-6155] done synthesizing module 'IBUFG' (0#1) [/opt/Xilinx/2025.2/Vivado/scripts/rt/data/unisim_comp.v:83453]
+INFO: [Synth 8-6157] synthesizing module 'BUFG' [/opt/Xilinx/2025.2/Vivado/scripts/rt/data/unisim_comp.v:2678]
+INFO: [Synth 8-6155] done synthesizing module 'BUFG' (0#1) [/opt/Xilinx/2025.2/Vivado/scripts/rt/data/unisim_comp.v:2678]
+INFO: [Synth 8-6155] done synthesizing module 'clocks' (0#1) [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/clocks.v:32]
+INFO: [Synth 8-6157] synthesizing module 'xls_aes_adapter' [/home/tnsai/ws/trojan/AES-trojan/rtl/xls_aes_adapter.v:8]
+INFO: [Synth 8-6157] synthesizing module 'aes_128' [/home/tnsai/ws/trojan/AES-trojan/rtl/aes_128.sv:1]
+INFO: [Synth 8-6155] done synthesizing module 'aes_128' (0#1) [/home/tnsai/ws/trojan/AES-trojan/rtl/aes_128.sv:1]
+INFO: [Synth 8-6155] done synthesizing module 'xls_aes_adapter' (0#1) [/home/tnsai/ws/trojan/AES-trojan/rtl/xls_aes_adapter.v:8]
+INFO: [Synth 8-6155] done synthesizing module 'cw305_top' (0#1) [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/cw305_top.v:32]
+INFO: [Synth 8-6155] done synthesizing module 'ss2_aes_wrapper' (0#1) [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/ss2_aes_wrapper.v:25]
+WARNING: [Synth 8-6014] Unused sequential element flop_inst.rdata_reg_reg was removed.  [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/fifo_sync.v:222]
+WARNING: [Synth 8-6014] Unused sequential element rx_crc_ok_reg was removed.  [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/ss2.v:166]
+WARNING: [Synth 8-6014] Unused sequential element tx_dut_cen_reg was removed.  [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/ss2.v:287]
+WARNING: [Synth 8-3848] Net O_cipherin in module/entity cw305_reg_aes does not have driver. [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/cw305_reg_aes.v:74]
+WARNING: [Synth 8-3848] Net io3 in module/entity ss2_aes_wrapper does not have driver. [/home/tnsai/ws/trojan/AES-trojan/rtl/cw/ss2_aes_wrapper.v:37]
+WARNING: [Synth 8-7129] Port O_cipherin[127] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[126] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[125] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[124] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[123] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[122] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[121] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[120] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[119] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[118] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[117] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[116] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[115] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[114] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[113] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[112] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[111] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[110] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[109] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[108] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[107] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[106] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[105] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[104] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[103] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[102] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[101] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[100] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[99] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[98] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[97] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[96] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[95] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[94] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[93] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[92] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[91] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[90] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[89] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[88] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[87] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[86] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[85] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[84] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[83] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[82] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[81] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[80] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[79] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[78] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[77] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[76] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[75] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[74] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[73] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[72] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[71] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[70] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[69] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[68] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[67] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[66] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[65] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[64] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[63] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[62] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[61] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[60] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[59] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[58] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[57] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[56] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[55] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[54] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[53] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[52] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[51] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[50] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[49] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[48] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[47] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[46] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[45] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[44] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[43] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[42] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[41] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[40] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[39] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[38] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[37] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[36] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[35] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[34] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[33] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[32] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[31] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[30] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[29] in module cw305_reg_aes is either unconnected or has no load
+WARNING: [Synth 8-7129] Port O_cipherin[28] in module cw305_reg_aes is either unconnected or has no load
+INFO: [Common 17-14] Message 'Synth 8-7129' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
+---------------------------------------------------------------------------------
+Finished RTL Elaboration : Time (s): cpu = 00:00:08 ; elapsed = 00:00:08 . Memory (MB): peak = 2411.191 ; gain = 704.812 ; free physical = 24413 ; free virtual = 49124
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Handling Custom Attributes
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Handling Custom Attributes : Time (s): cpu = 00:00:08 ; elapsed = 00:00:08 . Memory (MB): peak = 2411.191 ; gain = 704.812 ; free physical = 24398 ; free virtual = 49109
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished RTL Optimization Phase 1 : Time (s): cpu = 00:00:08 ; elapsed = 00:00:08 . Memory (MB): peak = 2411.191 ; gain = 704.812 ; free physical = 24398 ; free virtual = 49109
+---------------------------------------------------------------------------------
+Netlist sorting complete. Time (s): cpu = 00:00:00.04 ; elapsed = 00:00:00.04 . Memory (MB): peak = 2411.191 ; gain = 0.000 ; free physical = 24369 ; free virtual = 49079
+INFO: [Netlist 29-17] Analyzing 3 Unisim elements for replacement
+WARNING: [Netlist 29-432] The IBUFG primitive 'U_cw305_dut/U_clocks/clkibuf' has been retargeted to an IBUF primitive only. No BUFG will be added. If a global buffer is intended, please instantiate an available global clock primitive from the current architecture.
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-570] Preparing netlist for logic optimization
+
+Processing XDC Constraints
+Initializing timing engine
+Parsing XDC File [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc]
+CRITICAL WARNING: [Constraints 18-602] set_input_delay: list contains '1' objects of types '(port)' other than the types '(input port,internal pin)' supported by the constraint. These objects will not be used for this constraint. Please review the object list and ensure unsupported object types are removed. [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc:34]
+CRITICAL WARNING: [Constraints 18-472] set_input_delay: list does not contain any object of type(s) '(input port,internal pin)' supported by the constraint. The constraint will not be applied. Please check to make sure that this is intended. [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc:34]
+WARNING: [Constraints 18-402] set_false_path: 'io3' is not a valid startpoint. [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc:36]
+Resolution: A valid start point is a main or generated clock pin or port, a clock pin of a sequential cell, or a primary input or inout port. Please validate that all the objects returned by your query belong to this list.
+CRITICAL WARNING: [Constraints 18-513] set_false_path: list of objects specified for '-from' option contains no valid startpoints. Please check to make sure at least one valid startpoint is specified. [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc:36]
+WARNING: [Vivado 12-584] No ports matched 'LED*'. [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc:40]
+CRITICAL WARNING: [Vivado 12-4739] set_output_delay:No valid object(s) found for '-objects [get_ports LED*]'. [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc:40]
+Resolution: Check if the specified object(s) exists in the current design. If it does, ensure that the correct design hierarchy was specified for the object. If you are working with clocks, make sure create_clock was used to create the clock object before it is referenced.
+WARNING: [Vivado 12-584] No ports matched 'LED*'. [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc:44]
+CRITICAL WARNING: [Vivado 12-4739] set_false_path:No valid object(s) found for '-to [get_ports LED*]'. [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc:44]
+Resolution: Check if the specified object(s) exists in the current design. If it does, ensure that the correct design hierarchy was specified for the object. If you are working with clocks, make sure create_clock was used to create the clock object before it is referenced.
+Finished Parsing XDC File [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc]
+INFO: [Project 1-236] Implementation specific constraints were found while reading constraint file [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc]. These constraints will be ignored for synthesis but will be used in implementation. Impacted constraints are listed in the file [.Xil/ss2_aes_wrapper_propImpl.xdc].
+Resolution: To avoid this warning, move constraints listed in [.Xil/ss2_aes_wrapper_propImpl.xdc] to another XDC file and exclude this new file from synthesis with the used_in_synthesis property (File Properties dialog in GUI) and re-run elaboration/synthesis.
+Completed Processing XDC Constraints
+
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 2506.656 ; gain = 0.000 ; free physical = 24200 ; free virtual = 48914
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 2 instances were transformed.
+  BUFGMUX_CTRL => BUFGCTRL (inverted pins: S0): 1 instance 
+  IBUFG => IBUF: 1 instance 
+
+Constraint Validation Runtime : Time (s): cpu = 00:00:00.02 ; elapsed = 00:00:00.01 . Memory (MB): peak = 2506.691 ; gain = 0.000 ; free physical = 24195 ; free virtual = 48909
+---------------------------------------------------------------------------------
+Finished Constraint Validation : Time (s): cpu = 00:00:15 ; elapsed = 00:00:15 . Memory (MB): peak = 2506.691 ; gain = 800.312 ; free physical = 24122 ; free virtual = 48835
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Loading Part and Timing Information
+---------------------------------------------------------------------------------
+Loading part: xc7a35tcsg324-1
+---------------------------------------------------------------------------------
+Finished Loading Part and Timing Information : Time (s): cpu = 00:00:15 ; elapsed = 00:00:15 . Memory (MB): peak = 2514.660 ; gain = 808.281 ; free physical = 24122 ; free virtual = 48835
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Applying 'set_property' XDC Constraints
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished applying 'set_property' XDC Constraints : Time (s): cpu = 00:00:15 ; elapsed = 00:00:15 . Memory (MB): peak = 2514.660 ; gain = 808.281 ; free physical = 24121 ; free virtual = 48834
+---------------------------------------------------------------------------------
+INFO: [Synth 8-802] inferred FSM for state register 'erx_ctrl_reg_reg' in module 'uart_core'
+INFO: [Synth 8-802] inferred FSM for state register 'etx_ctrl_reg_reg' in module 'uart_core'
+INFO: [Synth 8-802] inferred FSM for state register 'rx_state_reg' in module 'ss2'
+INFO: [Synth 8-802] inferred FSM for state register 'tx_state_reg' in module 'ss2'
+INFO: [Synth 8-802] inferred FSM for state register 'state_reg' in module 'xls_aes_adapter'
+---------------------------------------------------------------------------------------------------
+                   State |                     New Encoding |                Previous Encoding 
+---------------------------------------------------------------------------------------------------
+                ETX_IDLE |                              000 |                              000
+                 ETX_ACK |                              001 |                              001
+               ETX_START |                              010 |                              010
+                ETX_BITS |                              011 |                              011
+                ETX_STOP |                              100 |                              100
+---------------------------------------------------------------------------------------------------
+INFO: [Synth 8-3354] encoded FSM with state register 'etx_ctrl_reg_reg' using encoding 'sequential' in module 'uart_core'
+---------------------------------------------------------------------------------------------------
+                   State |                     New Encoding |                Previous Encoding 
+---------------------------------------------------------------------------------------------------
+                ERX_IDLE |                              000 |                              000
+               ERX_START |                              001 |                              001
+                ERX_BITS |                              010 |                              010
+              ERX_PARITY |                              011 |                              101
+                ERX_STOP |                              100 |                              011
+                 ERX_SYN |                              101 |                              100
+---------------------------------------------------------------------------------------------------
+INFO: [Synth 8-3354] encoded FSM with state register 'erx_ctrl_reg_reg' using encoding 'sequential' in module 'uart_core'
+---------------------------------------------------------------------------------------------------
+                   State |                     New Encoding |                Previous Encoding 
+---------------------------------------------------------------------------------------------------
+              pS_TX_IDLE |                            00001 |                              000
+             pS_TX_0WAIT |                            00010 |                              001
+        pS_TX_WAIT_READY |                            00100 |                              010
+        pS_TX_EMPTY_FIFO |                            01000 |                              011
+              pS_TX_DONE |                            10000 |                              100
+---------------------------------------------------------------------------------------------------
+INFO: [Synth 8-3354] encoded FSM with state register 'tx_state_reg' using encoding 'one-hot' in module 'ss2'
+---------------------------------------------------------------------------------------------------
+                   State |                     New Encoding |                Previous Encoding 
+---------------------------------------------------------------------------------------------------
+              pS_RX_IDLE |                              000 |                              000
+         pS_RX_NUM_BYTES |                              001 |                              001
+                pS_RX_RX |                              010 |                              010
+         pS_RX_DELIMITER |                              011 |                              110
+       pS_RX_INSERT_ZERO |                              100 |                              011
+    pS_RX_WAIT_NUM_BYTES |                              101 |                              100
+---------------------------------------------------------------------------------------------------
+INFO: [Synth 8-3354] encoded FSM with state register 'rx_state_reg' using encoding 'sequential' in module 'ss2'
+---------------------------------------------------------------------------------------------------
+                   State |                     New Encoding |                Previous Encoding 
+---------------------------------------------------------------------------------------------------
+                  S_IDLE |                              000 |                              000
+                  S_LOAD |                              001 |                              001
+                S_WAIT_K |                              010 |                              010
+               S_WAIT_CT |                              011 |                              100
+                  S_DONE |                              100 |                              101
+---------------------------------------------------------------------------------------------------
+INFO: [Synth 8-3354] encoded FSM with state register 'state_reg' using encoding 'sequential' in module 'xls_aes_adapter'
+---------------------------------------------------------------------------------
+Finished RTL Optimization Phase 2 : Time (s): cpu = 00:00:22 ; elapsed = 00:00:22 . Memory (MB): peak = 2514.660 ; gain = 808.281 ; free physical = 23627 ; free virtual = 48342
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start RTL Component Statistics 
+---------------------------------------------------------------------------------
+Detailed RTL Component Info : 
++---Adders : 
+	   2 Input   32 Bit       Adders := 2     
+	   2 Input   16 Bit       Adders := 2     
+	   2 Input   10 Bit       Adders := 2     
+	   3 Input   10 Bit       Adders := 1     
+	   2 Input    9 Bit       Adders := 10    
+	   2 Input    8 Bit       Adders := 5     
+	   2 Input    5 Bit       Adders := 2     
++---XORs : 
+	   2 Input      8 Bit         XORs := 354   
+	   3 Input      8 Bit         XORs := 5     
+	   4 Input      8 Bit         XORs := 1     
+	   5 Input      8 Bit         XORs := 145   
+	   6 Input      8 Bit         XORs := 1     
+	   7 Input      8 Bit         XORs := 1     
+	   8 Input      8 Bit         XORs := 1     
+	  12 Input      8 Bit         XORs := 1     
+	   9 Input      8 Bit         XORs := 1     
+	  10 Input      8 Bit         XORs := 1     
+	  11 Input      8 Bit         XORs := 1     
+	   2 Input      1 Bit         XORs := 4     
+	   3 Input      1 Bit         XORs := 3     
+	   4 Input      1 Bit         XORs := 1     
+	   5 Input      1 Bit         XORs := 2     
+	   7 Input      1 Bit         XORs := 1     
+	   8 Input      1 Bit         XORs := 1     
+	   6 Input      1 Bit         XORs := 3     
++---XORs : 
+	               10 Bit    Wide XORs := 1     
++---Registers : 
+	              128 Bit    Registers := 15    
+	               32 Bit    Registers := 2     
+	               16 Bit    Registers := 2     
+	                9 Bit    Registers := 3     
+	                8 Bit    Registers := 22    
+	                5 Bit    Registers := 3     
+	                4 Bit    Registers := 1     
+	                3 Bit    Registers := 1     
+	                2 Bit    Registers := 4     
+	                1 Bit    Registers := 55    
++---RAMs : 
+	               2K Bit	(256 X 8 bit)          RAMs := 1     
++---ROMs : 
+	                    ROMs := 4     
++---Muxes : 
+	   2 Input  128 Bit        Muxes := 7     
+	   6 Input  128 Bit        Muxes := 3     
+	   2 Input   32 Bit        Muxes := 2     
+	   2 Input   16 Bit        Muxes := 4     
+	   2 Input   10 Bit        Muxes := 1     
+	   2 Input    9 Bit        Muxes := 1     
+	   2 Input    8 Bit        Muxes := 12    
+	   5 Input    8 Bit        Muxes := 3     
+	   7 Input    8 Bit        Muxes := 1     
+	   4 Input    8 Bit        Muxes := 1     
+	   6 Input    8 Bit        Muxes := 1     
+	   2 Input    5 Bit        Muxes := 5     
+	   5 Input    5 Bit        Muxes := 1     
+	   3 Input    4 Bit        Muxes := 1     
+	   5 Input    3 Bit        Muxes := 2     
+	   2 Input    3 Bit        Muxes := 17    
+	   6 Input    3 Bit        Muxes := 3     
+	   4 Input    3 Bit        Muxes := 1     
+	   2 Input    1 Bit        Muxes := 35    
+	   5 Input    1 Bit        Muxes := 34    
+	   6 Input    1 Bit        Muxes := 22    
+	   8 Input    1 Bit        Muxes := 4     
+	  10 Input    1 Bit        Muxes := 1     
+	   3 Input    1 Bit        Muxes := 1     
+---------------------------------------------------------------------------------
+Finished RTL Component Statistics 
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Part Resource Summary
+---------------------------------------------------------------------------------
+Part Resources:
+DSPs: 90 (col length:60)
+BRAMs: 100 (col length: RAMB18 60 RAMB36 30)
+---------------------------------------------------------------------------------
+Finished Part Resource Summary
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Cross Boundary and Area Optimization
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Cross Boundary and Area Optimization : Time (s): cpu = 00:02:27 ; elapsed = 00:02:28 . Memory (MB): peak = 2734.059 ; gain = 1027.680 ; free physical = 21828 ; free virtual = 46565
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start ROM, RAM, DSP, Shift Register and Retiming Reporting
+---------------------------------------------------------------------------------
+
+ROM: Preliminary Mapping Report
++------------+---------------+---------------+----------------+
+|Module Name | RTL Object    | Depth x Width | Implemented As | 
++------------+---------------+---------------+----------------+
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
+|aes_128     | literal_41315 | 256x8         | LUT            | 
++------------+---------------+---------------+----------------+
+
+
+Distributed RAM: Preliminary Mapping Report (see note below)
++----------------+-----------------------------------+-----------+----------------------+--------------+
+|Module Name     | RTL Object                        | Inference | Size (Depth x Width) | Primitives   | 
++----------------+-----------------------------------+-----------+----------------------+--------------+
+|ss2_aes_wrapper | U_ss2/U_tx_fifo/flop_inst.mem_reg | Implied   | 256 x 8              | RAM64M x 12  | 
++----------------+-----------------------------------+-----------+----------------------+--------------+
+
+Note: The table above is a preliminary report that shows the Distributed RAMs at the current stage of the synthesis flow. Some Distributed RAMs may be reimplemented as non Distributed RAM primitives later in the synthesis flow. Multiple instantiated RAMs are reported only once.
+---------------------------------------------------------------------------------
+Finished ROM, RAM, DSP, Shift Register and Retiming Reporting
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Applying XDC Timing Constraints
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Applying XDC Timing Constraints : Time (s): cpu = 00:02:31 ; elapsed = 00:02:33 . Memory (MB): peak = 2734.059 ; gain = 1027.680 ; free physical = 21799 ; free virtual = 46536
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Timing Optimization
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Timing Optimization : Time (s): cpu = 00:02:35 ; elapsed = 00:02:36 . Memory (MB): peak = 2734.059 ; gain = 1027.680 ; free physical = 21150 ; free virtual = 45889
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start ROM, RAM, DSP, Shift Register and Retiming Reporting
+---------------------------------------------------------------------------------
+
+Distributed RAM: Final Mapping Report
++----------------+-----------------------------------+-----------+----------------------+--------------+
+|Module Name     | RTL Object                        | Inference | Size (Depth x Width) | Primitives   | 
++----------------+-----------------------------------+-----------+----------------------+--------------+
+|ss2_aes_wrapper | U_ss2/U_tx_fifo/flop_inst.mem_reg | Implied   | 256 x 8              | RAM64M x 12  | 
++----------------+-----------------------------------+-----------+----------------------+--------------+
+
+---------------------------------------------------------------------------------
+Finished ROM, RAM, DSP, Shift Register and Retiming Reporting
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Technology Mapping
+---------------------------------------------------------------------------------
+INFO: [Synth 8-7052] The timing for the instance U_cw305_dut/u_xls_aes/u_aes_128/sel (implemented as a Block RAM) might be sub-optimal as no optional output register could be merged into the ram block. Providing additional output register may help in improving timing.
+INFO: [Synth 8-7052] The timing for the instance U_cw305_dut/u_xls_aes/u_aes_128/sel (implemented as a Block RAM) might be sub-optimal as no optional output register could be merged into the ram block. Providing additional output register may help in improving timing.
+INFO: [Synth 8-7052] The timing for the instance U_cw305_dut/u_xls_aes/u_aes_128/sel__1 (implemented as a Block RAM) might be sub-optimal as no optional output register could be merged into the ram block. Providing additional output register may help in improving timing.
+INFO: [Synth 8-7052] The timing for the instance U_cw305_dut/u_xls_aes/u_aes_128/sel__1 (implemented as a Block RAM) might be sub-optimal as no optional output register could be merged into the ram block. Providing additional output register may help in improving timing.
+---------------------------------------------------------------------------------
+Finished Technology Mapping : Time (s): cpu = 00:02:41 ; elapsed = 00:02:42 . Memory (MB): peak = 2742.066 ; gain = 1035.688 ; free physical = 20517 ; free virtual = 45256
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Flattening Before IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Flattening Before IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Final Netlist Cleanup
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Final Netlist Cleanup
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished IO Insertion : Time (s): cpu = 00:02:46 ; elapsed = 00:02:47 . Memory (MB): peak = 2766.879 ; gain = 1060.500 ; free physical = 20565 ; free virtual = 45302
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Instances
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Instances : Time (s): cpu = 00:02:46 ; elapsed = 00:02:47 . Memory (MB): peak = 2766.879 ; gain = 1060.500 ; free physical = 20565 ; free virtual = 45302
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Rebuilding User Hierarchy
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Rebuilding User Hierarchy : Time (s): cpu = 00:02:47 ; elapsed = 00:02:48 . Memory (MB): peak = 2766.879 ; gain = 1060.500 ; free physical = 20519 ; free virtual = 45256
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Ports
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Ports : Time (s): cpu = 00:02:47 ; elapsed = 00:02:48 . Memory (MB): peak = 2766.879 ; gain = 1060.500 ; free physical = 20519 ; free virtual = 45256
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Handling Custom Attributes
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Handling Custom Attributes : Time (s): cpu = 00:02:47 ; elapsed = 00:02:48 . Memory (MB): peak = 2766.879 ; gain = 1060.500 ; free physical = 20503 ; free virtual = 45240
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Nets
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Nets : Time (s): cpu = 00:02:47 ; elapsed = 00:02:48 . Memory (MB): peak = 2766.879 ; gain = 1060.500 ; free physical = 20503 ; free virtual = 45240
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start ROM, RAM, DSP, Shift Register and Retiming Reporting
+---------------------------------------------------------------------------------
+
+Static Shift Register Report:
++----------------+--------------------------------+--------+-------+--------------+--------------------+-------------------+--------+---------+
+|Module Name     | RTL Name                       | Length | Width | Reset Signal | Pull out first Reg | Pull out last Reg | SRL16E | SRLC32E | 
++----------------+--------------------------------+--------+-------+--------------+--------------------+-------------------+--------+---------+
+|ss2_aes_wrapper | U_ss2/tx_next_byte_pipe_reg[3] | 3      | 1     | NO           | NO                 | YES               | 1      | 0       | 
++----------------+--------------------------------+--------+-------+--------------+--------------------+-------------------+--------+---------+
+
+---------------------------------------------------------------------------------
+Finished ROM, RAM, DSP, Shift Register and Retiming Reporting
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Writing Synthesis Report
+---------------------------------------------------------------------------------
+
+Report BlackBoxes: 
++-+--------------+----------+
+| |BlackBox name |Instances |
++-+--------------+----------+
++-+--------------+----------+
+
+Report Cell Usage: 
++------+-------------+------+
+|      |Cell         |Count |
++------+-------------+------+
+|1     |BUFG         |     1|
+|2     |BUFGMUX_CTRL |     1|
+|3     |CARRY4       |    51|
+|4     |LUT1         |   143|
+|5     |LUT2         |   783|
+|6     |LUT3         |   302|
+|7     |LUT4         |   794|
+|8     |LUT5         |   828|
+|9     |LUT6         |  8664|
+|10    |MUXF7        |  2139|
+|11    |MUXF8        |   708|
+|12    |ODDR         |     1|
+|13    |RAM64M       |    12|
+|14    |RAMB18E1     |     2|
+|15    |SRL16E       |     1|
+|16    |USR_ACCESSE2 |     1|
+|17    |FDCE         |    89|
+|18    |FDPE         |     1|
+|19    |FDRE         |  2087|
+|20    |FDSE         |     1|
+|21    |IBUF         |     2|
+|22    |IBUFG        |     1|
+|23    |OBUF         |     6|
+|24    |OBUFT        |     1|
++------+-------------+------+
+---------------------------------------------------------------------------------
+Finished Writing Synthesis Report : Time (s): cpu = 00:02:47 ; elapsed = 00:02:48 . Memory (MB): peak = 2766.879 ; gain = 1060.500 ; free physical = 20503 ; free virtual = 45240
+---------------------------------------------------------------------------------
+Synthesis finished with 0 errors, 0 critical warnings and 178 warnings.
+Synthesis Optimization Runtime : Time (s): cpu = 00:02:45 ; elapsed = 00:02:46 . Memory (MB): peak = 2766.879 ; gain = 965.000 ; free physical = 20503 ; free virtual = 45240
+Synthesis Optimization Complete : Time (s): cpu = 00:02:47 ; elapsed = 00:02:48 . Memory (MB): peak = 2766.887 ; gain = 1060.500 ; free physical = 20503 ; free virtual = 45240
+INFO: [Project 1-571] Translating synthesized netlist
+Netlist sorting complete. Time (s): cpu = 00:00:00.09 ; elapsed = 00:00:00.09 . Memory (MB): peak = 2778.785 ; gain = 0.000 ; free physical = 20603 ; free virtual = 45340
+INFO: [Netlist 29-17] Analyzing 2915 Unisim elements for replacement
+WARNING: [Netlist 29-432] The IBUFG primitive 'U_cw305_dut/U_clocks/clkibuf' has been retargeted to an IBUF primitive only. No BUFG will be added. If a global buffer is intended, please instantiate an available global clock primitive from the current architecture.
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+WARNING: [Netlist 29-101] Netlist 'ss2_aes_wrapper' is not ideal for floorplanning, since the cellview 'aes_128' contains a large number of primitives.  Please consider enabling hierarchy in synthesis if you want to do floorplanning.
+INFO: [Project 1-570] Preparing netlist for logic optimization
+Parsing XDC File [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc]
+CRITICAL WARNING: [Constraints 18-602] set_input_delay: list contains '1' objects of types '(port)' other than the types '(input port,internal pin)' supported by the constraint. These objects will not be used for this constraint. Please review the object list and ensure unsupported object types are removed. [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc:34]
+CRITICAL WARNING: [Constraints 18-472] set_input_delay: list does not contain any object of type(s) '(input port,internal pin)' supported by the constraint. The constraint will not be applied. Please check to make sure that this is intended. [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc:34]
+WARNING: [Constraints 18-402] set_false_path: 'io3' is not a valid startpoint. [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc:36]
+Resolution: A valid start point is a main or generated clock pin or port, a clock pin of a sequential cell, or a primary input or inout port. Please validate that all the objects returned by your query belong to this list.
+CRITICAL WARNING: [Constraints 18-513] set_false_path: list of objects specified for '-from' option contains no valid startpoints. Please check to make sure at least one valid startpoint is specified. [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc:36]
+WARNING: [Vivado 12-584] No ports matched 'LED*'. [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc:40]
+CRITICAL WARNING: [Vivado 12-4739] set_output_delay:No valid object(s) found for '-objects [get_ports LED*]'. [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc:40]
+Resolution: Check if the specified object(s) exists in the current design. If it does, ensure that the correct design hierarchy was specified for the object. If you are working with clocks, make sure create_clock was used to create the clock object before it is referenced.
+WARNING: [Vivado 12-584] No ports matched 'LED*'. [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc:44]
+CRITICAL WARNING: [Vivado 12-4739] set_false_path:No valid object(s) found for '-to [get_ports LED*]'. [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc:44]
+Resolution: Check if the specified object(s) exists in the current design. If it does, ensure that the correct design hierarchy was specified for the object. If you are working with clocks, make sure create_clock was used to create the clock object before it is referenced.
+Finished Parsing XDC File [/home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc]
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+Netlist sorting complete. Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00 . Memory (MB): peak = 2830.680 ; gain = 0.000 ; free physical = 20577 ; free virtual = 45316
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 14 instances were transformed.
+  BUFGMUX_CTRL => BUFGCTRL (inverted pins: S0): 1 instance 
+  IBUFG => IBUF: 1 instance 
+  RAM64M => RAM64M (RAMD64E(x4)): 12 instances
+
+Synth Design complete | Checksum: 6441ae2
+INFO: [Common 17-83] Releasing license: Synthesis
+72 Infos, 118 Warnings, 10 Critical Warnings and 0 Errors encountered.
+synth_design completed successfully
+synth_design: Time (s): cpu = 00:02:56 ; elapsed = 00:02:55 . Memory (MB): peak = 2830.715 ; gain = 1214.672 ; free physical = 20564 ; free virtual = 45304
+INFO: [Common 17-2834] synth_design peak Physical Memory [PSS] (MB): overall = 2343.984; main = 2208.404; forked = 343.061
+INFO: [Common 17-2834] synth_design peak Virtual Memory [VSS] (MB): overall = 3736.090; main = 2830.684; forked = 994.020
+# write_checkpoint -force [file join $output_dir "${top_module}_synth.dcp"]
+Wrote PlaceDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 2862.695 ; gain = 0.000 ; free physical = 20564 ; free virtual = 45303
+Wrote PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 2862.695 ; gain = 0.000 ; free physical = 20564 ; free virtual = 45303
+Writing XDEF routing.
+INFO: [Timing 38-480] Writing timing data to binary archive.
+Writing XDEF routing logical nets.
+Writing XDEF routing special nets.
+Wrote RouteStorage: Time (s): cpu = 00:00:00.06 ; elapsed = 00:00:00.02 . Memory (MB): peak = 2862.695 ; gain = 0.000 ; free physical = 20563 ; free virtual = 45303
+Write ShapeDB Complete: Time (s): cpu = 00:00:00.09 ; elapsed = 00:00:00.04 . Memory (MB): peak = 2862.695 ; gain = 0.000 ; free physical = 20563 ; free virtual = 45303
+Wrote PlaceStorage: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 2862.695 ; gain = 0.000 ; free physical = 20563 ; free virtual = 45303
+Wrote Netlist Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 2862.695 ; gain = 0.000 ; free physical = 20563 ; free virtual = 45303
+Wrote Device Cache: Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00 . Memory (MB): peak = 2862.695 ; gain = 0.000 ; free physical = 20563 ; free virtual = 45303
+Write Physdb Complete: Time (s): cpu = 00:00:00.12 ; elapsed = 00:00:00.06 . Memory (MB): peak = 2862.695 ; gain = 0.000 ; free physical = 20563 ; free virtual = 45303
+INFO: [Common 17-1381] The checkpoint '/home/tnsai/ws/trojan/AES-trojan/build/ss2_aes_wrapper_synth.dcp' has been generated.
+# report_timing_summary -file [file join $output_dir "timing_synth.rpt"]
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -1, Delay Type: min_max.
+INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 6 CPUs
+report_timing_summary: Time (s): cpu = 00:00:08 ; elapsed = 00:00:06 . Memory (MB): peak = 2878.695 ; gain = 16.000 ; free physical = 24716 ; free virtual = 49454
+# report_utilization -file [file join $output_dir "utilization_synth.rpt"]
+# report_power -file [file join $output_dir "power_synth.rpt"]
+Command: report_power -file /home/tnsai/ws/trojan/AES-trojan/build/power_synth.rpt
+INFO: [Power 33-23] Power model is not available for U_buildtime
+Running Vector-less Activity Propagation...
+
+Finished Running Vector-less Activity Propagation
+1 Infos, 0 Warnings, 0 Critical Warnings and 0 Errors encountered.
+report_power completed successfully
+report_power: Time (s): cpu = 00:00:10 ; elapsed = 00:00:07 . Memory (MB): peak = 2902.707 ; gain = 24.012 ; free physical = 24432 ; free virtual = 49171
+# puts " Synthesis complete."
+ Synthesis complete.
+# puts "\n============================================================"
+
+============================================================
+# puts " Running Implementation..."
+ Running Implementation...
+# puts "============================================================"
+============================================================
+# opt_design
+Command: opt_design
+Attempting to get a license for feature 'Implementation' and/or device 'xc7a35t'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xc7a35t'
+Running DRC as a precondition to command opt_design
+
+Starting DRC Task
+INFO: [DRC 23-27] Running DRC with 8 threads
+INFO: [Project 1-461] DRC finished with 0 Errors
+INFO: [Project 1-462] Please refer to the DRC report (report_drc) for more information.
+
+Time (s): cpu = 00:00:00.95 ; elapsed = 00:00:00.51 . Memory (MB): peak = 2902.707 ; gain = 0.000 ; free physical = 24435 ; free virtual = 49174
+
+Starting Cache Timing Information Task
+Ending Cache Timing Information Task | Checksum: 13824ed6d
+
+Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00 . Memory (MB): peak = 2902.707 ; gain = 0.000 ; free physical = 24435 ; free virtual = 49174
+
+Starting Logic Optimization Task
+
+Phase 1 Initialization
+
+Phase 1.1 Core Generation And Design Setup
+Phase 1.1 Core Generation And Design Setup | Checksum: 13824ed6d
+
+Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00.01 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24199 ; free virtual = 48940
+
+Phase 1.2 Setup Constraints And Sort Netlist
+Phase 1.2 Setup Constraints And Sort Netlist | Checksum: 13824ed6d
+
+Time (s): cpu = 00:00:00.02 ; elapsed = 00:00:00.02 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24199 ; free virtual = 48940
+Phase 1 Initialization | Checksum: 13824ed6d
+
+Time (s): cpu = 00:00:00.02 ; elapsed = 00:00:00.02 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24199 ; free virtual = 48940
+
+Phase 2 Timer Update And Timing Data Collection
+
+Phase 2.1 Detect if minReqCache needed
+Phase 2.1 Detect if minReqCache needed | Checksum: 13824ed6d
+
+Time (s): cpu = 00:00:00.03 ; elapsed = 00:00:00.03 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24196 ; free virtual = 48937
+
+Phase 2.2 Timer Update
+Phase 2.2 Timer Update | Checksum: 13824ed6d
+
+Time (s): cpu = 00:00:00.45 ; elapsed = 00:00:00.23 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24177 ; free virtual = 48918
+
+Phase 2.3 Timing Data Collection
+Phase 2.3 Timing Data Collection | Checksum: 13824ed6d
+
+Time (s): cpu = 00:00:00.46 ; elapsed = 00:00:00.24 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24176 ; free virtual = 48919
+Phase 2 Timer Update And Timing Data Collection | Checksum: 13824ed6d
+
+Time (s): cpu = 00:00:00.46 ; elapsed = 00:00:00.24 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24176 ; free virtual = 48919
+
+Phase 3 Retarget
+INFO: [Opt 31-1851] Number of loadless carry chains removed were: 0
+INFO: [Opt 31-1834] Total Chains To Be Transformed Were: 0 AND Number of Transformed insts Created are: 0
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+INFO: [Opt 31-49] Retargeted 0 cell(s).
+Phase 3 Retarget | Checksum: 1ad962fe5
+
+Time (s): cpu = 00:00:00.71 ; elapsed = 00:00:00.49 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24147 ; free virtual = 48887
+Retarget | Checksum: 1ad962fe5
+INFO: [Opt 31-389] Phase Retarget created 0 cells and removed 128 cells
+
+Phase 4 Constant propagation
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+Phase 4 Constant propagation | Checksum: 1ad962fe5
+
+Time (s): cpu = 00:00:00.82 ; elapsed = 00:00:00.61 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24137 ; free virtual = 48878
+Constant propagation | Checksum: 1ad962fe5
+INFO: [Opt 31-389] Phase Constant propagation created 0 cells and removed 0 cells
+
+Phase 5 Sweep
+INFO: [Constraints 18-11670] Building netlist checker database with flags, 0x8
+Done building netlist checker database: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24126 ; free virtual = 48867
+Phase 5 Sweep | Checksum: 222065cb7
+
+Time (s): cpu = 00:00:00.96 ; elapsed = 00:00:00.75 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24119 ; free virtual = 48859
+Sweep | Checksum: 222065cb7
+INFO: [Opt 31-389] Phase Sweep created 0 cells and removed 0 cells
+
+Phase 6 BUFG optimization
+Phase 6 BUFG optimization | Checksum: 222065cb7
+
+Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.84 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24110 ; free virtual = 48851
+BUFG optimization | Checksum: 222065cb7
+INFO: [Opt 31-662] Phase BUFG optimization created 0 cells of which 0 are BUFGs and removed 0 cells.
+
+Phase 7 Shift Register Optimization
+INFO: [Opt 31-1064] SRL Remap converted 0 SRLs to 0 registers and converted 0 registers of register chains to 0 SRLs
+Phase 7 Shift Register Optimization | Checksum: 222065cb7
+
+Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.86 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24110 ; free virtual = 48851
+Shift Register Optimization | Checksum: 222065cb7
+INFO: [Opt 31-389] Phase Shift Register Optimization created 0 cells and removed 0 cells
+
+Phase 8 Post Processing Netlist
+Phase 8 Post Processing Netlist | Checksum: 222065cb7
+
+Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.91 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24110 ; free virtual = 48849
+Post Processing Netlist | Checksum: 222065cb7
+INFO: [Opt 31-389] Phase Post Processing Netlist created 0 cells and removed 0 cells
+
+Phase 9 Finalization
+
+Phase 9.1 Finalizing Design Cores and Updating Shapes
+Phase 9.1 Finalizing Design Cores and Updating Shapes | Checksum: 225b0888b
+
+Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.95 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24110 ; free virtual = 48849
+
+Phase 9.2 Verifying Netlist Connectivity
+
+Starting Connectivity Check Task
+
+Time (s): cpu = 00:00:00.03 ; elapsed = 00:00:00.03 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24110 ; free virtual = 48849
+Phase 9.2 Verifying Netlist Connectivity | Checksum: 225b0888b
+
+Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.98 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24110 ; free virtual = 48849
+Phase 9 Finalization | Checksum: 225b0888b
+
+Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.98 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24110 ; free virtual = 48849
+Opt_design Change Summary
+=========================
+
+
+-------------------------------------------------------------------------------------------------------------------------
+|  Phase                        |  #Cells created  |  #Cells Removed  |  #Constrained objects preventing optimizations  |
+-------------------------------------------------------------------------------------------------------------------------
+|  Retarget                     |               0  |             128  |                                              0  |
+|  Constant propagation         |               0  |               0  |                                              0  |
+|  Sweep                        |               0  |               0  |                                              0  |
+|  BUFG optimization            |               0  |               0  |                                              0  |
+|  Shift Register Optimization  |               0  |               0  |                                              0  |
+|  Post Processing Netlist      |               0  |               0  |                                              0  |
+-------------------------------------------------------------------------------------------------------------------------
+
+
+Ending Logic Optimization Task | Checksum: 225b0888b
+
+Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.99 . Memory (MB): peak = 2963.699 ; gain = 0.000 ; free physical = 24110 ; free virtual = 48849
+
+Starting Power Optimization Task
+INFO: [Pwropt 34-132] Skipping clock gating for clocks with a period < 2.00 ns.
+INFO: [Power 33-23] Power model is not available for U_buildtime
+INFO: [Pwropt 34-9] Applying IDT optimizations ...
+INFO: [Pwropt 34-10] Applying ODC optimizations ...
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+Running Vector-less Activity Propagation...
+
+Finished Running Vector-less Activity Propagation
+
+
+Starting PowerOpt Patch Enables Task
+INFO: [Pwropt 34-162] WRITE_MODE attribute of 0 BRAM(s) out of a total of 2 has been updated to save power. Run report_power_opt to get a complete listing of the BRAMs updated.
+INFO: [Pwropt 34-201] Structural ODC has moved 0 WE to EN ports
+Number of BRAM Ports augmented: 0 newly gated: 0 Total Ports: 4
+Ending PowerOpt Patch Enables Task | Checksum: 225b0888b
+
+Time (s): cpu = 00:00:00.05 ; elapsed = 00:00:00.05 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 24427 ; free virtual = 49166
+Ending Power Optimization Task | Checksum: 225b0888b
+
+Time (s): cpu = 00:00:03 ; elapsed = 00:00:02 . Memory (MB): peak = 3139.773 ; gain = 176.074 ; free physical = 24426 ; free virtual = 49165
+
+Starting Final Cleanup Task
+Ending Final Cleanup Task | Checksum: 225b0888b
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 24426 ; free virtual = 49165
+Netlist sorting complete. Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 24426 ; free virtual = 49165
+INFO: [Common 17-83] Releasing license: Implementation
+25 Infos, 0 Warnings, 0 Critical Warnings and 0 Errors encountered.
+opt_design completed successfully
+opt_design: Time (s): cpu = 00:00:08 ; elapsed = 00:00:06 . Memory (MB): peak = 3139.773 ; gain = 237.066 ; free physical = 24426 ; free virtual = 49165
+# place_design
+Command: place_design
+Attempting to get a license for feature 'Implementation' and/or device 'xc7a35t'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xc7a35t'
+INFO: [Common 17-83] Releasing license: Implementation
+INFO: [DRC 23-27] Running DRC with 8 threads
+INFO: [Vivado_Tcl 4-198] DRC finished with 0 Errors
+INFO: [Vivado_Tcl 4-199] Please refer to the DRC report (report_drc) for more information.
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+Running DRC as a precondition to command place_design
+INFO: [DRC 23-27] Running DRC with 8 threads
+INFO: [Vivado_Tcl 4-198] DRC finished with 0 Errors
+INFO: [Vivado_Tcl 4-199] Please refer to the DRC report (report_drc) for more information.
+INFO: [Place 30-611] Multithreading enabled for place_design using a maximum of 6 CPUs
+
+Starting Placer Task
+
+Phase 1 Placer Initialization
+
+Phase 1.1 Placer Initialization Netlist Sorting
+Netlist sorting complete. Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 24157 ; free virtual = 48899
+Phase 1.1 Placer Initialization Netlist Sorting | Checksum: 13d25c048
+
+Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 24157 ; free virtual = 48899
+Netlist sorting complete. Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 24156 ; free virtual = 48898
+
+Phase 1.2 IO Placement/ Clock Placement/ Build Placer Device
+Phase 1.2 IO Placement/ Clock Placement/ Build Placer Device | Checksum: 14899102e
+
+Time (s): cpu = 00:00:00.84 ; elapsed = 00:00:00.43 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 24169 ; free virtual = 48911
+
+Phase 1.3 Build Placer Netlist Model
+Phase 1.3 Build Placer Netlist Model | Checksum: 1cd7f0b3c
+
+Time (s): cpu = 00:00:05 ; elapsed = 00:00:02 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 24026 ; free virtual = 48768
+
+Phase 1.4 Constrain Clocks/Macros
+Phase 1.4 Constrain Clocks/Macros | Checksum: 1cd7f0b3c
+
+Time (s): cpu = 00:00:05 ; elapsed = 00:00:02 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 24017 ; free virtual = 48759
+Phase 1 Placer Initialization | Checksum: 1cd7f0b3c
+
+Time (s): cpu = 00:00:05 ; elapsed = 00:00:02 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 24014 ; free virtual = 48756
+
+Phase 2 Global Placement
+
+Phase 2.1 Floorplanning
+Phase 2.1 Floorplanning | Checksum: 1f7e3d07e
+
+Time (s): cpu = 00:00:07 ; elapsed = 00:00:03 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23935 ; free virtual = 48674
+
+Phase 2.2 Update Timing before SLR Path Opt
+Phase 2.2 Update Timing before SLR Path Opt | Checksum: 21d002a47
+
+Time (s): cpu = 00:00:09 ; elapsed = 00:00:04 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23885 ; free virtual = 48625
+
+Phase 2.3 Post-Processing in Floorplanning
+Phase 2.3 Post-Processing in Floorplanning | Checksum: 21d002a47
+
+Time (s): cpu = 00:00:09 ; elapsed = 00:00:04 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23878 ; free virtual = 48617
+
+Phase 2.4 Global Place Phase1
+Phase 2.4 Global Place Phase1 | Checksum: 1a72a3cdb
+
+Time (s): cpu = 00:00:31 ; elapsed = 00:00:11 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23554 ; free virtual = 48293
+
+Phase 2.5 Global Place Phase2
+
+Phase 2.5.1 UpdateTiming Before Physical Synthesis
+Phase 2.5.1 UpdateTiming Before Physical Synthesis | Checksum: 1a72a3cdb
+
+Time (s): cpu = 00:00:33 ; elapsed = 00:00:12 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23569 ; free virtual = 48308
+
+Phase 2.5.2 Physical Synthesis In Placer
+INFO: [Physopt 32-1035] Found 0 LUTNM shape to break, 308 LUT instances to create LUTNM shape
+INFO: [Physopt 32-1044] Break lutnm for timing: one critical 0, two critical 0, total 0, new lutff created 0
+INFO: [Physopt 32-1138] End 1 Pass. Optimized 124 nets or LUTs. Breaked 0 LUT, combined 124 existing LUTs and moved 0 existing LUT
+INFO: [Physopt 32-65] No nets found for high-fanout optimization.
+INFO: [Physopt 32-232] Optimized 0 net. Created 0 new instance.
+INFO: [Physopt 32-775] End 1 Pass. Optimized 0 net or cell. Created 0 new cell, deleted 0 existing cell and moved 0 existing cell
+INFO: [Physopt 32-670] No setup violation found.  DSP Register Optimization was not performed.
+INFO: [Physopt 32-670] No setup violation found.  Shift Register to Pipeline Optimization was not performed.
+INFO: [Physopt 32-670] No setup violation found.  Shift Register Optimization was not performed.
+INFO: [Physopt 32-670] No setup violation found.  BRAM Register Optimization was not performed.
+INFO: [Physopt 32-670] No setup violation found.  URAM Register Optimization was not performed.
+INFO: [Physopt 32-949] No candidate nets found for dynamic/static region interface net replication
+INFO: [Physopt 32-775] End 1 Pass. Optimized 0 net or cell. Created 0 new cell, deleted 0 existing cell and moved 0 existing cell
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.01 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23663 ; free virtual = 48402
+
+Summary of Physical Synthesis Optimizations
+============================================
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+|  Optimization                                     |  Added Cells  |  Removed Cells  |  Optimized Cells/Nets  |  Dont Touch  |  Iterations  |  Elapsed   |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+|  LUT Combining                                    |            0  |            124  |                   124  |           0  |           1  |  00:00:01  |
+|  Retime                                           |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  Very High Fanout                                 |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  DSP Register                                     |            0  |              0  |                     0  |           0  |           0  |  00:00:00  |
+|  Shift Register to Pipeline                       |            0  |              0  |                     0  |           0  |           0  |  00:00:00  |
+|  Shift Register                                   |            0  |              0  |                     0  |           0  |           0  |  00:00:00  |
+|  BRAM Register                                    |            0  |              0  |                     0  |           0  |           0  |  00:00:00  |
+|  URAM Register                                    |            0  |              0  |                     0  |           0  |           0  |  00:00:00  |
+|  Dynamic/Static Region Interface Net Replication  |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  Total                                            |            0  |            124  |                   124  |           0  |           4  |  00:00:01  |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Phase 2.5.2 Physical Synthesis In Placer | Checksum: 242a76c62
+
+Time (s): cpu = 00:00:36 ; elapsed = 00:00:14 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23617 ; free virtual = 48356
+Phase 2.5 Global Place Phase2 | Checksum: 1cbeb7114
+
+Time (s): cpu = 00:00:41 ; elapsed = 00:00:15 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23540 ; free virtual = 48282
+Phase 2 Global Placement | Checksum: 1cbeb7114
+
+Time (s): cpu = 00:00:41 ; elapsed = 00:00:15 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23536 ; free virtual = 48278
+
+Phase 3 Detail Placement
+
+Phase 3.1 Commit Multi Column Macros
+Phase 3.1 Commit Multi Column Macros | Checksum: 2116c949a
+
+Time (s): cpu = 00:00:43 ; elapsed = 00:00:16 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23454 ; free virtual = 48195
+
+Phase 3.2 Commit Most Macros & LUTRAMs
+Phase 3.2 Commit Most Macros & LUTRAMs | Checksum: 2014fb569
+
+Time (s): cpu = 00:00:47 ; elapsed = 00:00:17 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23320 ; free virtual = 48061
+
+Phase 3.3 Area Swap Optimization
+Phase 3.3 Area Swap Optimization | Checksum: 1dd14c19d
+
+Time (s): cpu = 00:00:47 ; elapsed = 00:00:17 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23305 ; free virtual = 48045
+
+Phase 3.4 Pipeline Register Optimization
+Phase 3.4 Pipeline Register Optimization | Checksum: 1de39550a
+
+Time (s): cpu = 00:00:47 ; elapsed = 00:00:17 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23305 ; free virtual = 48045
+
+Phase 3.5 Small Shape Detail Placement
+Phase 3.5 Small Shape Detail Placement | Checksum: 27e4df8b9
+
+Time (s): cpu = 00:00:52 ; elapsed = 00:00:22 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23315 ; free virtual = 48056
+
+Phase 3.6 Re-assign LUT pins
+Phase 3.6 Re-assign LUT pins | Checksum: 1f36928d0
+
+Time (s): cpu = 00:00:53 ; elapsed = 00:00:23 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23319 ; free virtual = 48058
+
+Phase 3.7 Pipeline Register Optimization
+Phase 3.7 Pipeline Register Optimization | Checksum: 265be16f1
+
+Time (s): cpu = 00:00:53 ; elapsed = 00:00:23 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23319 ; free virtual = 48058
+Phase 3 Detail Placement | Checksum: 265be16f1
+
+Time (s): cpu = 00:00:53 ; elapsed = 00:00:23 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23319 ; free virtual = 48058
+
+Phase 4 Post Placement Optimization and Clean-Up
+
+Phase 4.1 Post Commit Optimization
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+
+Phase 4.1.1 Post Placement Optimization
+Post Placement Optimization Initialization | Checksum: 194f6ee8e
+
+Phase 4.1.1.1 BUFG Insertion
+
+Starting Physical Synthesis Task
+
+Phase 1 Physical Synthesis Initialization
+INFO: [Physopt 32-721] Multithreading enabled for phys_opt_design using a maximum of 6 CPUs
+INFO: [Physopt 32-619] Estimated Timing Summary | WNS=64.811 | TNS=0.000 |
+Phase 1 Physical Synthesis Initialization | Checksum: 17f635ee6
+
+Time (s): cpu = 00:00:00.29 ; elapsed = 00:00:00.13 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23353 ; free virtual = 48093
+INFO: [Place 46-56] BUFG insertion identified 0 candidate nets. Inserted BUFG: 0, Replicated BUFG Driver: 0, Skipped due to Placement/Routing Conflicts: 0, Skipped due to Timing Degradation: 0, Skipped due to netlist editing failed: 0.
+Ending Physical Synthesis Task | Checksum: 23f6014e5
+
+Time (s): cpu = 00:00:00.35 ; elapsed = 00:00:00.16 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23353 ; free virtual = 48092
+Phase 4.1.1.1 BUFG Insertion | Checksum: 194f6ee8e
+
+Time (s): cpu = 00:00:58 ; elapsed = 00:00:25 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23353 ; free virtual = 48092
+
+Phase 4.1.1.2 Post Placement Timing Optimization
+INFO: [Place 30-746] Post Placement Timing Summary WNS=64.811. For the most accurate timing information please run report_timing.
+Phase 4.1.1.2 Post Placement Timing Optimization | Checksum: 24afe23e6
+
+Time (s): cpu = 00:00:58 ; elapsed = 00:00:25 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23352 ; free virtual = 48092
+
+Time (s): cpu = 00:00:58 ; elapsed = 00:00:25 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23352 ; free virtual = 48092
+Phase 4.1 Post Commit Optimization | Checksum: 24afe23e6
+
+Time (s): cpu = 00:00:58 ; elapsed = 00:00:25 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23352 ; free virtual = 48092
+
+Phase 4.2 Post Placement Cleanup
+Phase 4.2 Post Placement Cleanup | Checksum: 24afe23e6
+
+Time (s): cpu = 00:00:58 ; elapsed = 00:00:25 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23351 ; free virtual = 48090
+
+Phase 4.3 Placer Reporting
+
+Phase 4.3.1 Print Estimated Congestion
+INFO: [Place 30-612] Post-Placement Estimated Congestion 
+ ____________________________________________________
+|           | Global Congestion | Short Congestion  |
+| Direction | Region Size       | Region Size       |
+|___________|___________________|___________________|
+|      North|                1x1|                8x8|
+|___________|___________________|___________________|
+|      South|                1x1|                1x1|
+|___________|___________________|___________________|
+|       East|                1x1|                4x4|
+|___________|___________________|___________________|
+|       West|                1x1|                1x1|
+|___________|___________________|___________________|
+
+Phase 4.3.1 Print Estimated Congestion | Checksum: 24afe23e6
+
+Time (s): cpu = 00:00:58 ; elapsed = 00:00:25 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23352 ; free virtual = 48092
+Phase 4.3 Placer Reporting | Checksum: 24afe23e6
+
+Time (s): cpu = 00:00:58 ; elapsed = 00:00:25 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23352 ; free virtual = 48092
+
+Phase 4.4 Final Placement Cleanup
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23352 ; free virtual = 48092
+
+Time (s): cpu = 00:00:58 ; elapsed = 00:00:25 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23352 ; free virtual = 48092
+Phase 4 Post Placement Optimization and Clean-Up | Checksum: 25051a94c
+
+Time (s): cpu = 00:00:58 ; elapsed = 00:00:25 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23359 ; free virtual = 48098
+Ending Placer Task | Checksum: 15c28d208
+
+Time (s): cpu = 00:00:58 ; elapsed = 00:00:25 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23359 ; free virtual = 48098
+29 Infos, 0 Warnings, 0 Critical Warnings and 0 Errors encountered.
+place_design completed successfully
+place_design: Time (s): cpu = 00:01:00 ; elapsed = 00:00:26 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23359 ; free virtual = 48098
+# write_checkpoint -force [file join $output_dir "${top_module}_placed.dcp"]
+INFO: [Timing 38-480] Writing timing data to binary archive.
+Wrote PlaceDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23357 ; free virtual = 48099
+Wrote PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23357 ; free virtual = 48099
+Writing XDEF routing.
+Writing XDEF routing logical nets.
+Writing XDEF routing special nets.
+Wrote RouteStorage: Time (s): cpu = 00:00:00.04 ; elapsed = 00:00:00.01 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23354 ; free virtual = 48096
+Write ShapeDB Complete: Time (s): cpu = 00:00:00.16 ; elapsed = 00:00:00.05 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23351 ; free virtual = 48094
+Wrote PlaceStorage: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.49 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23315 ; free virtual = 48069
+Wrote Netlist Cache: Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00.02 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23315 ; free virtual = 48071
+Wrote Device Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23300 ; free virtual = 48056
+Write Physdb Complete: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.53 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 23284 ; free virtual = 48040
+INFO: [Common 17-1381] The checkpoint '/home/tnsai/ws/trojan/AES-trojan/build/ss2_aes_wrapper_placed.dcp' has been generated.
+# report_timing_summary -file [file join $output_dir "timing_placed.rpt"]
+INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -1, Delay Type: min_max.
+INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 6 CPUs
+# phys_opt_design
+Command: phys_opt_design
+Attempting to get a license for feature 'Implementation' and/or device 'xc7a35t'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xc7a35t'
+INFO: [Vivado_Tcl 4-2279] Estimated Timing Summary | WNS= 64.811 | TNS= 0.000 | 
+INFO: [Vivado_Tcl 4-383] Design worst setup slack (WNS) is greater than or equal to 0.000 ns. All physical synthesis setup optimizations will be skipped.
+INFO: [Vivado_Tcl 4-232] No setup violation found. The netlist was not modified.
+INFO: [Common 17-83] Releasing license: Implementation
+5 Infos, 0 Warnings, 0 Critical Warnings and 0 Errors encountered.
+phys_opt_design completed successfully
+# route_design
+Command: route_design
+Attempting to get a license for feature 'Implementation' and/or device 'xc7a35t'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xc7a35t'
+
+
+Starting Routing Task
+INFO: [Route 35-254] Multithreading enabled for route_design using a maximum of 6 CPUs
+
+Phase 1 Build RT Design
+Checksum: PlaceDB: 5d9cfb94 ConstDB: 0 ShapeSum: 5e0a7a1d RouteDB: a0815c57
+Post Restoration Checksum: NetGraph: 813da265 | NumContArr: 3683e2a4 | Constraints: c2a8fa9d | Timing: c2a8fa9d
+Phase 1 Build RT Design | Checksum: 23d137a43
+
+Time (s): cpu = 00:00:19 ; elapsed = 00:00:14 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22829 ; free virtual = 47572
+
+Phase 2 Router Initialization
+
+Phase 2.1 Fix Topology Constraints
+Phase 2.1 Fix Topology Constraints | Checksum: 23d137a43
+
+Time (s): cpu = 00:00:19 ; elapsed = 00:00:14 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22829 ; free virtual = 47573
+
+Phase 2.2 Pre Route Cleanup
+Phase 2.2 Pre Route Cleanup | Checksum: 23d137a43
+
+Time (s): cpu = 00:00:19 ; elapsed = 00:00:14 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22829 ; free virtual = 47573
+ Number of Nodes with overlaps = 0
+
+Phase 2.3 Update Timing
+Phase 2.3 Update Timing | Checksum: 36313ef9f
+
+Time (s): cpu = 00:00:24 ; elapsed = 00:00:16 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22680 ; free virtual = 47425
+INFO: [Route 35-416] Intermediate Timing Summary | WNS=63.271 | TNS=0.000  | WHS=-0.204 | THS=-72.381|
+
+
+Phase 2.4 Soft Constraint Pins - Fast Budgeting
+Phase 2.4 Soft Constraint Pins - Fast Budgeting | Checksum: 29a2a0d0d
+
+Time (s): cpu = 00:00:26 ; elapsed = 00:00:17 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22679 ; free virtual = 47424
+
+Router Utilization Summary
+  Global Vertical Routing Utilization    = 0 %
+  Global Horizontal Routing Utilization  = 0 %
+  Routable Net Status*
+  *Does not include unroutable nets such as driverless and loadless.
+  Run report_route_status for detailed report.
+  Number of Failed Nets               = 11213
+    (Failed Nets is the sum of unrouted and partially routed nets)
+  Number of Unrouted Nets             = 11213
+  Number of Partially Routed Nets     = 0
+  Number of Node Overlaps             = 0
+
+Phase 2 Router Initialization | Checksum: 327ba468a
+
+Time (s): cpu = 00:00:26 ; elapsed = 00:00:17 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22678 ; free virtual = 47423
+
+Phase 3 Global Routing
+Phase 3 Global Routing | Checksum: 327ba468a
+
+Time (s): cpu = 00:00:26 ; elapsed = 00:00:17 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22678 ; free virtual = 47423
+
+Phase 4 Initial Routing
+
+Phase 4.1 Initial Net Routing Pass
+Phase 4.1 Initial Net Routing Pass | Checksum: 21b6d5303
+
+Time (s): cpu = 00:00:29 ; elapsed = 00:00:18 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22683 ; free virtual = 47429
+Phase 4 Initial Routing | Checksum: 21b6d5303
+
+Time (s): cpu = 00:00:29 ; elapsed = 00:00:18 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22683 ; free virtual = 47429
+
+Phase 5 Rip-up And Reroute
+
+Phase 5.1 Global Iteration 0
+ Number of Nodes with overlaps = 2501
+ Number of Nodes with overlaps = 18
+ Number of Nodes with overlaps = 1
+ Number of Nodes with overlaps = 0
+INFO: [Route 35-416] Intermediate Timing Summary | WNS=63.197 | TNS=0.000  | WHS=N/A    | THS=N/A    |
+
+Phase 5.1 Global Iteration 0 | Checksum: 1e51d59a5
+
+Time (s): cpu = 00:00:35 ; elapsed = 00:00:22 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22648 ; free virtual = 47394
+
+Phase 5.2 Global Iteration 1
+ Number of Nodes with overlaps = 0
+INFO: [Route 35-416] Intermediate Timing Summary | WNS=63.197 | TNS=0.000  | WHS=N/A    | THS=N/A    |
+
+Phase 5.2 Global Iteration 1 | Checksum: 1f574798f
+
+Time (s): cpu = 00:00:35 ; elapsed = 00:00:22 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22649 ; free virtual = 47395
+Phase 5 Rip-up And Reroute | Checksum: 1f574798f
+
+Time (s): cpu = 00:00:35 ; elapsed = 00:00:22 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22649 ; free virtual = 47395
+
+Phase 6 Delay and Skew Optimization
+
+Phase 6.1 Delay CleanUp
+Phase 6.1 Delay CleanUp | Checksum: 1f574798f
+
+Time (s): cpu = 00:00:35 ; elapsed = 00:00:22 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22649 ; free virtual = 47395
+
+Phase 6.2 Clock Skew Optimization
+Phase 6.2 Clock Skew Optimization | Checksum: 1f574798f
+
+Time (s): cpu = 00:00:35 ; elapsed = 00:00:22 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22648 ; free virtual = 47394
+Phase 6 Delay and Skew Optimization | Checksum: 1f574798f
+
+Time (s): cpu = 00:00:35 ; elapsed = 00:00:22 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22648 ; free virtual = 47394
+
+Phase 7 Post Hold Fix
+
+Phase 7.1 Hold Fix Iter
+INFO: [Route 35-416] Intermediate Timing Summary | WNS=63.197 | TNS=0.000  | WHS=0.006  | THS=0.000  |
+
+Phase 7.1 Hold Fix Iter | Checksum: 21a7161f4
+
+Time (s): cpu = 00:00:36 ; elapsed = 00:00:22 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22648 ; free virtual = 47393
+Phase 7 Post Hold Fix | Checksum: 21a7161f4
+
+Time (s): cpu = 00:00:36 ; elapsed = 00:00:22 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22648 ; free virtual = 47393
+
+Phase 8 Route finalize
+
+Router Utilization Summary
+  Global Vertical Routing Utilization    = 4.744 %
+  Global Horizontal Routing Utilization  = 5.96525 %
+  Routable Net Status*
+  *Does not include unroutable nets such as driverless and loadless.
+  Run report_route_status for detailed report.
+  Number of Failed Nets               = 0
+    (Failed Nets is the sum of unrouted and partially routed nets)
+  Number of Unrouted Nets             = 0
+  Number of Partially Routed Nets     = 0
+  Number of Node Overlaps             = 0
+
+Phase 8 Route finalize | Checksum: 21a7161f4
+
+Time (s): cpu = 00:00:36 ; elapsed = 00:00:22 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22648 ; free virtual = 47393
+
+Phase 9 Verifying routed nets
+
+ Verification completed successfully
+Phase 9 Verifying routed nets | Checksum: 21a7161f4
+
+Time (s): cpu = 00:00:36 ; elapsed = 00:00:22 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22648 ; free virtual = 47393
+
+Phase 10 Depositing Routes
+Phase 10 Depositing Routes | Checksum: 2069517ec
+
+Time (s): cpu = 00:00:38 ; elapsed = 00:00:24 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22642 ; free virtual = 47385
+
+Phase 11 Post Process Routing
+Phase 11 Post Process Routing | Checksum: 2069517ec
+
+Time (s): cpu = 00:00:38 ; elapsed = 00:00:24 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22642 ; free virtual = 47385
+
+Phase 12 Post Router Timing
+INFO: [Route 35-57] Estimated Timing Summary | WNS=63.197 | TNS=0.000  | WHS=0.006  | THS=0.000  |
+
+INFO: [Route 35-327] The final timing numbers are based on the router estimated timing analysis. For a complete and accurate timing signoff, please run report_timing_summary.
+Phase 12 Post Router Timing | Checksum: 2069517ec
+
+Time (s): cpu = 00:00:38 ; elapsed = 00:00:24 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22641 ; free virtual = 47385
+Total Elapsed time in route_design: 23.78 secs
+
+Phase 13 Post-Route Event Processing
+Phase 13 Post-Route Event Processing | Checksum: ec1beb5f
+
+Time (s): cpu = 00:00:38 ; elapsed = 00:00:24 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22641 ; free virtual = 47385
+INFO: [Route 35-16] Router Completed Successfully
+Ending Routing Task | Checksum: ec1beb5f
+
+Time (s): cpu = 00:00:38 ; elapsed = 00:00:24 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22641 ; free virtual = 47385
+
+Routing Is Done.
+INFO: [Common 17-83] Releasing license: Implementation
+10 Infos, 0 Warnings, 0 Critical Warnings and 0 Errors encountered.
+route_design completed successfully
+route_design: Time (s): cpu = 00:00:38 ; elapsed = 00:00:24 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22641 ; free virtual = 47385
+# write_checkpoint -force [file join $output_dir "${top_module}_routed.dcp"]
+INFO: [Timing 38-480] Writing timing data to binary archive.
+Wrote PlaceDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22641 ; free virtual = 47384
+Wrote PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22641 ; free virtual = 47384
+Writing XDEF routing.
+Writing XDEF routing logical nets.
+Write ShapeDB Complete: Time (s): cpu = 00:00:00.1 ; elapsed = 00:00:00.03 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22640 ; free virtual = 47385
+Writing XDEF routing special nets.
+Wrote RouteStorage: Time (s): cpu = 00:00:00.55 ; elapsed = 00:00:00.18 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22632 ; free virtual = 47381
+Wrote PlaceStorage: Time (s): cpu = 00:00:00.68 ; elapsed = 00:00:00.45 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22622 ; free virtual = 47380
+Wrote Netlist Cache: Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00.01 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22618 ; free virtual = 47378
+Wrote Device Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.01 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22618 ; free virtual = 47378
+Write Physdb Complete: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.65 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22618 ; free virtual = 47378
+INFO: [Common 17-1381] The checkpoint '/home/tnsai/ws/trojan/AES-trojan/build/ss2_aes_wrapper_routed.dcp' has been generated.
+# report_timing_summary -file [file join $output_dir "timing_routed.rpt"]
+INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -1, Delay Type: min_max.
+INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 6 CPUs
+# report_utilization -file [file join $output_dir "utilization_routed.rpt"]
+# report_power -file [file join $output_dir "power_routed.rpt"]
+Command: report_power -file /home/tnsai/ws/trojan/AES-trojan/build/power_routed.rpt
+INFO: [Power 33-23] Power model is not available for U_buildtime
+Running Vector-less Activity Propagation...
+
+Finished Running Vector-less Activity Propagation
+1 Infos, 0 Warnings, 0 Critical Warnings and 0 Errors encountered.
+report_power completed successfully
+report_power: Time (s): cpu = 00:00:12 ; elapsed = 00:00:08 . Memory (MB): peak = 3139.773 ; gain = 0.000 ; free physical = 22689 ; free virtual = 47438
+# report_drc -file [file join $output_dir "drc_routed.rpt"]
+Command: report_drc -file /home/tnsai/ws/trojan/AES-trojan/build/drc_routed.rpt
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1704] No user IP repositories specified
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository '/opt/Xilinx/2025.2/data/ip'.
+INFO: [DRC 23-27] Running DRC with 8 threads
+INFO: [Vivado_Tcl 2-168] The results of DRC are in file /home/tnsai/ws/trojan/AES-trojan/build/drc_routed.rpt.
+report_drc completed successfully
+# puts " Implementation complete."
+ Implementation complete.
+# puts "\n============================================================"
+
+============================================================
+# puts " Generating Bitstream..."
+ Generating Bitstream...
+# puts "============================================================"
+============================================================
+# write_bitstream -force [file join $output_dir "${top_module}.bit"]
+Command: write_bitstream -force /home/tnsai/ws/trojan/AES-trojan/build/ss2_aes_wrapper.bit
+Attempting to get a license for feature 'Implementation' and/or device 'xc7a35t'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xc7a35t'
+Running DRC as a precondition to command write_bitstream
+INFO: [IP_Flow 19-1839] IP Catalog is up to date.
+INFO: [DRC 23-27] Running DRC with 8 threads
+INFO: [Vivado 12-3199] DRC finished with 0 Errors
+INFO: [Vivado 12-3200] Please refer to the DRC report (report_drc) for more information.
+Integrating Hard IP ELF/MEM with the PDI.
+INFO: [Designutils 20-2272] Running write_bitstream with 6 threads.
+Loading data files...
+Loading site data...
+Loading route data...
+Processing options...
+Creating bitmap...
+Creating bitstream...
+Bitstream compression saved 6619968 bits.
+Writing bitstream /home/tnsai/ws/trojan/AES-trojan/build/ss2_aes_wrapper.bit...
+INFO: [Vivado 12-1842] Bitgen Completed Successfully.
+INFO: [Common 17-83] Releasing license: Implementation
+8 Infos, 0 Warnings, 0 Critical Warnings and 0 Errors encountered.
+write_bitstream completed successfully
+write_bitstream: Time (s): cpu = 00:00:20 ; elapsed = 00:00:16 . Memory (MB): peak = 3227.980 ; gain = 88.207 ; free physical = 22011 ; free virtual = 46761
+# puts "\n============================================================"
+
+============================================================
+# puts " BUILD COMPLETE"
+ BUILD COMPLETE
+# puts " Bitstream: [file join $output_dir ${top_module}.bit]"
+ Bitstream: /home/tnsai/ws/trojan/AES-trojan/build/ss2_aes_wrapper.bit
+# puts "============================================================"
+============================================================
+# exit 0
+INFO: [Common 17-206] Exiting Vivado at Fri Mar 20 14:05:09 2026...

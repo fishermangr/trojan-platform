@@ -1,0 +1,70 @@
+#-----------------------------------------------------------
+# Vivado v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 12:34:56 MST 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Fri Mar 20 14:00:01 2026
+# Process ID         : 27877
+# Current directory  : /home/tnsai/ws/trojan/AES-trojan
+# Command line       : vivado -mode batch -source /home/tnsai/ws/trojan/AES-trojan/vivado/synthesize.tcl
+# Log file           : /home/tnsai/ws/trojan/AES-trojan/vivado.log
+# Journal file       : /home/tnsai/ws/trojan/AES-trojan/vivado.jou
+# Running On         : tnsai-Z390-AORUS-PRO-WIFI
+# Platform           : Ubuntu
+# Operating System   : Ubuntu 22.04.5 LTS
+# Processor Detail   : Intel(R) Core(TM) i5-9600K CPU @ 3.70GHz
+# CPU Frequency      : 4299.937 MHz
+# CPU Physical cores : 6
+# CPU Logical cores  : 6
+# Host memory        : 67357 MB
+# Swap memory        : 2147 MB
+# Total Virtual      : 69505 MB
+# Available Virtual  : 50881 MB
+#-----------------------------------------------------------
+source /home/tnsai/ws/trojan/AES-trojan/vivado/synthesize.tcl
+# set script_dir [file dirname [file normalize [info script]]]
+# set project_root [file normalize [file join $script_dir ".."]]
+# set rtl_dir    [file join $project_root "rtl"]
+# set cw_dir     [file join $project_root "rtl" "cw"]
+# set xdc_file   [file join $script_dir "cw312_a35.xdc"]
+# set output_dir [file join $project_root "build"]
+# set part       "xc7a35tcsg324-1"
+# set top_module "ss2_aes_wrapper"
+# for {set i 0} {$i < [llength $argv]} {incr i} {
+#     set arg [lindex $argv $i]
+#     switch -- $arg {
+#         "--rtl_dir"    { incr i; set rtl_dir    [lindex $argv $i] }
+#         "--xdc_file"   { incr i; set xdc_file   [lindex $argv $i] }
+#         "--output_dir" { incr i; set output_dir  [lindex $argv $i] }
+#         "--part"       { incr i; set part        [lindex $argv $i] }
+#         "--top"        { incr i; set top_module  [lindex $argv $i] }
+#     }
+# }
+# puts "============================================================"
+============================================================
+# puts " Vivado Synthesis & Implementation for CW312-A35"
+ Vivado Synthesis & Implementation for CW312-A35
+# puts "============================================================"
+============================================================
+# puts " RTL dir:    $rtl_dir"
+ RTL dir:    /home/tnsai/ws/trojan/AES-trojan/rtl
+# puts " XDC file:   $xdc_file"
+ XDC file:   /home/tnsai/ws/trojan/AES-trojan/vivado/cw312_a35.xdc
+# puts " Output dir: $output_dir"
+ Output dir: /home/tnsai/ws/trojan/AES-trojan/build
+# puts " Part:       $part"
+ Part:       xc7a35tcsg324-1
+# puts " Top module: $top_module"
+ Top module: ss2_aes_wrapper
+# puts "============================================================"
+============================================================
+# file mkdir $output_dir
+# create_project -in_memory -part $part
+# set cw_files [glob -nocomplain [file join $cw_dir "*.v"]]
+# foreach f $cw_files {
+#     puts "  Reading CW: $f"
+#     read_verilog -define {SS2_WRAPPER XLS_AES} $f
+# }
+  Reading CW: /home/tnsai/ws/trojan/AES-trojan/rtl/cw/ss2_aes_wrapper.v
+ERROR: [Common 17-69] Command failed: '-define' is only supported when is_compile_unit_mode is enabled on the source fileset
+INFO: [Common 17-206] Exiting Vivado at Fri Mar 20 14:00:06 2026...

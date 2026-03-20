@@ -11,15 +11,16 @@ Create a new branch called seting-up-the-environment
 In a folder called ./AES-trojan, do the following:
 I want you to create a platform using:
 - Chipwhisperer husky (which is connected)
-- Google XLS (which is cloned)
+- Google XLS (which is cloned and compiled)
 - Vivado (which is installed)
 
 Google XLS will be used to generate RTL code from ./AES
 Vivado will be used to synthesize the RTL code and generate a bitstream using TCL scripts.
 The bitstream will be uploaded to the CW312-A35 Artix A7 35T through the CW313 board of the HUSKY.
 
-Create one script to perform HLS using Google XLS of a C++ description..
-One script to perform synthesis and implementation of the RTL code using Vivado.
+Create one script to perform HLS using Google XLS of the TinyAES C++ description. If necessary change the code of TinyAES so that it is 
+synthesizable by Google XLS.
+One script to perform synthesis and implementation of the RTL code produced by Google XLSusing Vivado.
 One script to upload the bitstream to the CW312-A35 Artix A7 35T through the CW313 board of the HUSKY.
 
 All files and folders should be organized in a logical manner under ./AES-trojan.

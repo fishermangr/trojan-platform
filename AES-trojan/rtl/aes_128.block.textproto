@@ -1,0 +1,22 @@
+# proto-file: xls/contrib/xlscc/hls_block.proto
+# proto-message: HLSBlock
+
+channels {
+  name: "key_in"
+  is_input: true
+  type: CHANNEL_TYPE_FIFO
+  width_in_bits: 128
+}
+channels {
+  name: "plaintext_in"
+  is_input: true
+  type: CHANNEL_TYPE_FIFO
+  width_in_bits: 128
+}
+channels {
+  name: "ciphertext_out"
+  is_input: false
+  type: CHANNEL_TYPE_FIFO
+  width_in_bits: 128
+}
+name: "AesEcb128Encrypt"

@@ -1,0 +1,1293 @@
+# proto-file: xls/contrib/xlscc/metadata_output.proto
+# proto-message: MetadataOutput
+
+structs {
+  as_struct {
+    name {
+      as_inst {
+        name {
+          name: "AesBlock"
+          fully_qualified_name: "AesBlock"
+          id: 131232535420040
+        }
+      }
+    }
+    fields {
+      name: "data"
+      type {
+        as_array {
+          element_type {
+            as_int {
+              width: 8
+              is_signed: false
+              is_synthetic: true
+            }
+          }
+          size: 16
+          use_tuple: false
+        }
+      }
+    }
+    no_tuple: false
+  }
+}
+structs {
+  as_struct {
+    name {
+      as_inst {
+        name {
+          name: "AesEcb128Encrypt"
+          fully_qualified_name: "AesEcb128Encrypt"
+          id: 131232535572600
+        }
+      }
+    }
+    fields {
+      name: "ciphertext_out"
+      type {
+        as_channel {
+          item_type {
+            as_inst {
+              name {
+                name: "AesBlock"
+                fully_qualified_name: "AesBlock"
+                id: 131232535420040
+              }
+            }
+          }
+          memory_size: -1
+        }
+      }
+    }
+    fields {
+      name: "plaintext_in"
+      type {
+        as_channel {
+          item_type {
+            as_inst {
+              name {
+                name: "AesBlock"
+                fully_qualified_name: "AesBlock"
+                id: 131232535420040
+              }
+            }
+          }
+          memory_size: -1
+        }
+      }
+    }
+    fields {
+      name: "key_in"
+      type {
+        as_channel {
+          item_type {
+            as_inst {
+              name {
+                name: "AesBlock"
+                fully_qualified_name: "AesBlock"
+                id: 131232535420040
+              }
+            }
+          }
+          memory_size: -1
+        }
+      }
+    }
+    no_tuple: false
+  }
+}
+top_func_proto {
+  name {
+    name: "Run"
+    fully_qualified_name: "AesEcb128Encrypt::Run"
+    id: 131232535579280
+    xls_name: "Run_impl"
+  }
+  return_type {
+    as_void {
+    }
+  }
+  whole_declaration_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 156
+      column: 11
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 189
+      column: 3
+    }
+  }
+  return_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 157
+      column: 3
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 157
+      column: 3
+    }
+  }
+  parameters_location {
+    begin {
+    }
+    end {
+    }
+  }
+  this_type {
+    as_inst {
+      name {
+        name: "AesEcb128Encrypt"
+        fully_qualified_name: "AesEcb128Encrypt"
+        id: 131232535572600
+      }
+    }
+    declaration_location {
+      begin {
+        filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+        line: 150
+        column: 1
+      }
+      end {
+        filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+        line: 190
+        column: 1
+      }
+    }
+  }
+  is_const: false
+  is_method: true
+}
+all_func_protos {
+  name {
+    name: "MixColumns"
+    fully_qualified_name: "MixColumns"
+    id: 131232535455568
+    xls_name: "_Z10MixColumnsPA4_6XlsIntILi8ELb0EE"
+  }
+  return_type {
+    as_void {
+    }
+  }
+  params {
+    name: "state"
+    type {
+      as_array {
+        element_type {
+          as_array {
+            element_type {
+              as_int {
+                width: 8
+                is_signed: false
+                is_synthetic: true
+              }
+            }
+            size: 4
+            use_tuple: false
+          }
+        }
+        size: 4
+        use_tuple: false
+      }
+    }
+    is_reference: true
+    is_const: false
+  }
+  whole_declaration_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 110
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 132
+      column: 1
+    }
+  }
+  return_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 110
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 110
+      column: 1
+    }
+  }
+  parameters_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 110
+      column: 17
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 110
+      column: 30
+    }
+  }
+}
+all_func_protos {
+  name {
+    name: "SubBytes"
+    fully_qualified_name: "SubBytes"
+    id: 131232535444400
+    xls_name: "_Z8SubBytesPA4_6XlsIntILi8ELb0EE"
+  }
+  return_type {
+    as_void {
+    }
+  }
+  params {
+    name: "state"
+    type {
+      as_array {
+        element_type {
+          as_array {
+            element_type {
+              as_int {
+                width: 8
+                is_signed: false
+                is_synthetic: true
+              }
+            }
+            size: 4
+            use_tuple: false
+          }
+        }
+        size: 4
+        use_tuple: false
+      }
+    }
+    is_reference: true
+    is_const: false
+  }
+  whole_declaration_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 72
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 80
+      column: 1
+    }
+  }
+  return_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 72
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 72
+      column: 1
+    }
+  }
+  parameters_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 72
+      column: 15
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 72
+      column: 28
+    }
+  }
+}
+all_func_protos {
+  name {
+    name: "operator>>"
+    fully_qualified_name: "operator>>"
+    id: 131232535088072
+    xls_name: "_ZrsILi8ELb0EEN6XlsIntIXT_EXT0_EE2rtILi32ELb1EE4arg1ERKS1_i"
+  }
+  return_type {
+    as_int {
+      width: 8
+      is_signed: false
+      is_synthetic: true
+    }
+  }
+  params {
+    name: "op"
+    type {
+      as_int {
+        width: 8
+        is_signed: false
+        is_synthetic: true
+      }
+    }
+    is_reference: true
+    is_const: true
+  }
+  params {
+    name: "i_op"
+    type {
+      as_int {
+        width: 32
+        is_signed: true
+        is_synthetic: false
+      }
+    }
+    is_reference: false
+    is_const: false
+  }
+  whole_declaration_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/xls/xls/contrib/xlscc/synth_only/xls_int.h"
+      line: 1114
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/xls/xls/contrib/xlscc/synth_only/xls_int.h"
+      line: 1114
+      column: 1
+    }
+  }
+  return_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/xls/xls/contrib/xlscc/synth_only/xls_int.h"
+      line: 1114
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/xls/xls/contrib/xlscc/synth_only/xls_int.h"
+      line: 1114
+      column: 1
+    }
+  }
+  parameters_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/xls/xls/contrib/xlscc/synth_only/xls_int.h"
+      line: 1114
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/xls/xls/contrib/xlscc/synth_only/xls_int.h"
+      line: 1114
+      column: 1
+    }
+  }
+}
+all_func_protos {
+  name {
+    name: "AddRoundKey"
+    fully_qualified_name: "AddRoundKey"
+    id: 131232535367712
+    xls_name: "_Z11AddRoundKeyiPA4_6XlsIntILi8ELb0EEPKS0_"
+  }
+  return_type {
+    as_void {
+    }
+  }
+  params {
+    name: "round"
+    type {
+      as_int {
+        width: 32
+        is_signed: true
+        is_synthetic: false
+      }
+    }
+    is_reference: false
+    is_const: false
+  }
+  params {
+    name: "state"
+    type {
+      as_array {
+        element_type {
+          as_array {
+            element_type {
+              as_int {
+                width: 8
+                is_signed: false
+                is_synthetic: true
+              }
+            }
+            size: 4
+            use_tuple: false
+          }
+        }
+        size: 4
+        use_tuple: false
+      }
+    }
+    is_reference: true
+    is_const: false
+  }
+  params {
+    name: "RoundKey"
+    type {
+      as_array {
+        element_type {
+          as_int {
+            width: 8
+            is_signed: false
+            is_synthetic: true
+          }
+        }
+        size: 176
+        use_tuple: false
+      }
+    }
+    is_reference: true
+    is_const: true
+  }
+  whole_declaration_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 61
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 69
+      column: 1
+    }
+  }
+  return_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 61
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 61
+      column: 1
+    }
+  }
+  parameters_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 61
+      column: 18
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 61
+      column: 77
+    }
+  }
+}
+all_func_protos {
+  name {
+    name: "AesBlock"
+    fully_qualified_name: "AesBlock::AesBlock"
+    id: 131232535584912
+    xls_name: "_ZN8AesBlockC1Ev"
+  }
+  return_type {
+    as_void {
+    }
+  }
+  whole_declaration_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 81
+      column: 8
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 81
+      column: 8
+    }
+  }
+  return_location {
+    begin {
+    }
+    end {
+    }
+  }
+  parameters_location {
+    begin {
+    }
+    end {
+    }
+  }
+  this_type {
+    as_inst {
+      name {
+        name: "AesBlock"
+        fully_qualified_name: "AesBlock"
+        id: 131232535420040
+      }
+    }
+    declaration_location {
+      begin {
+        filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+        line: 81
+        column: 1
+      }
+      end {
+        filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+        line: 83
+        column: 1
+      }
+    }
+  }
+  is_const: false
+  is_method: true
+}
+all_func_protos {
+  name {
+    name: "operator<<"
+    fully_qualified_name: "operator<<"
+    id: 131232534980584
+    xls_name: "_ZlsILi8ELb0EEN6XlsIntIXT_EXT0_EE2rtILi32ELb1EE4arg1ERKS1_i"
+  }
+  return_type {
+    as_int {
+      width: 8
+      is_signed: false
+      is_synthetic: true
+    }
+  }
+  params {
+    name: "op"
+    type {
+      as_int {
+        width: 8
+        is_signed: false
+        is_synthetic: true
+      }
+    }
+    is_reference: true
+    is_const: true
+  }
+  params {
+    name: "i_op"
+    type {
+      as_int {
+        width: 32
+        is_signed: true
+        is_synthetic: false
+      }
+    }
+    is_reference: false
+    is_const: false
+  }
+  whole_declaration_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/xls/xls/contrib/xlscc/synth_only/xls_int.h"
+      line: 1114
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/xls/xls/contrib/xlscc/synth_only/xls_int.h"
+      line: 1114
+      column: 1
+    }
+  }
+  return_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/xls/xls/contrib/xlscc/synth_only/xls_int.h"
+      line: 1114
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/xls/xls/contrib/xlscc/synth_only/xls_int.h"
+      line: 1114
+      column: 1
+    }
+  }
+  parameters_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/xls/xls/contrib/xlscc/synth_only/xls_int.h"
+      line: 1114
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/xls/xls/contrib/xlscc/synth_only/xls_int.h"
+      line: 1114
+      column: 1
+    }
+  }
+}
+all_func_protos {
+  name {
+    name: "sbox_lookup"
+    fully_qualified_name: "sbox_lookup"
+    id: 131232534771400
+    xls_name: "_Z11sbox_lookup6XlsIntILi8ELb0EE"
+  }
+  return_type {
+    as_int {
+      width: 8
+      is_signed: false
+      is_synthetic: true
+    }
+  }
+  params {
+    name: "idx"
+    type {
+      as_int {
+        width: 8
+        is_signed: false
+        is_synthetic: true
+      }
+    }
+    is_reference: false
+    is_const: false
+  }
+  whole_declaration_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 26
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 62
+      column: 1
+    }
+  }
+  return_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 26
+      column: 8
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 26
+      column: 8
+    }
+  }
+  parameters_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 26
+      column: 23
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 26
+      column: 26
+    }
+  }
+}
+all_func_protos {
+  name {
+    name: "KeyExpansion"
+    fully_qualified_name: "KeyExpansion"
+    id: 131232535424480
+    xls_name: "_Z12KeyExpansionP6XlsIntILi8ELb0EEPKS0_"
+  }
+  return_type {
+    as_void {
+    }
+  }
+  params {
+    name: "RoundKey"
+    type {
+      as_array {
+        element_type {
+          as_int {
+            width: 8
+            is_signed: false
+            is_synthetic: true
+          }
+        }
+        size: 176
+        use_tuple: false
+      }
+    }
+    is_reference: true
+    is_const: false
+  }
+  params {
+    name: "Key"
+    type {
+      as_array {
+        element_type {
+          as_int {
+            width: 8
+            is_signed: false
+            is_synthetic: true
+          }
+        }
+        size: 16
+        use_tuple: false
+      }
+    }
+    is_reference: true
+    is_const: true
+  }
+  whole_declaration_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 14
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 58
+      column: 1
+    }
+  }
+  return_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 14
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 14
+      column: 1
+    }
+  }
+  parameters_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 14
+      column: 19
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 14
+      column: 71
+    }
+  }
+}
+all_func_protos {
+  name {
+    name: "Run"
+    fully_qualified_name: "AesEcb128Encrypt::Run"
+    id: 131232535579280
+    xls_name: "Run_impl"
+  }
+  return_type {
+    as_void {
+    }
+  }
+  whole_declaration_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 156
+      column: 11
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 189
+      column: 3
+    }
+  }
+  return_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 157
+      column: 3
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 157
+      column: 3
+    }
+  }
+  parameters_location {
+    begin {
+    }
+    end {
+    }
+  }
+  this_type {
+    as_inst {
+      name {
+        name: "AesEcb128Encrypt"
+        fully_qualified_name: "AesEcb128Encrypt"
+        id: 131232535572600
+      }
+    }
+    declaration_location {
+      begin {
+        filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+        line: 150
+        column: 1
+      }
+      end {
+        filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+        line: 190
+        column: 1
+      }
+    }
+  }
+  is_const: false
+  is_method: true
+}
+all_func_protos {
+  name {
+    name: "xtime"
+    fully_qualified_name: "xtime"
+    id: 131232534839472
+    xls_name: "_Z5xtime6XlsIntILi8ELb0EE"
+  }
+  return_type {
+    as_int {
+      width: 8
+      is_signed: false
+      is_synthetic: true
+    }
+  }
+  params {
+    name: "x"
+    type {
+      as_int {
+        width: 8
+        is_signed: false
+        is_synthetic: true
+      }
+    }
+    is_reference: false
+    is_const: false
+  }
+  whole_declaration_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 74
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 78
+      column: 1
+    }
+  }
+  return_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 74
+      column: 8
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 74
+      column: 8
+    }
+  }
+  parameters_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 74
+      column: 17
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 74
+      column: 20
+    }
+  }
+}
+all_func_protos {
+  name {
+    name: "operator<"
+    fully_qualified_name: "operator<"
+    id: 131232535951120
+    xls_name: "_ZltILi32ELb1EEbRK6XlsIntIXT_EXT0_EEi"
+  }
+  return_type {
+    as_bool {
+    }
+  }
+  params {
+    name: "op"
+    type {
+      as_int {
+        width: 32
+        is_signed: true
+        is_synthetic: true
+      }
+    }
+    is_reference: true
+    is_const: true
+  }
+  params {
+    name: "op2"
+    type {
+      as_int {
+        width: 32
+        is_signed: true
+        is_synthetic: false
+      }
+    }
+    is_reference: false
+    is_const: false
+  }
+  whole_declaration_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/xls/xls/contrib/xlscc/synth_only/xls_int.h"
+      line: 1114
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/xls/xls/contrib/xlscc/synth_only/xls_int.h"
+      line: 1114
+      column: 1
+    }
+  }
+  return_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/xls/xls/contrib/xlscc/synth_only/xls_int.h"
+      line: 1114
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/xls/xls/contrib/xlscc/synth_only/xls_int.h"
+      line: 1114
+      column: 1
+    }
+  }
+  parameters_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/xls/xls/contrib/xlscc/synth_only/xls_int.h"
+      line: 1114
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/xls/xls/contrib/xlscc/synth_only/xls_int.h"
+      line: 1114
+      column: 1
+    }
+  }
+}
+all_func_protos {
+  name {
+    name: "AesBlock"
+    fully_qualified_name: "AesBlock::AesBlock"
+    id: 131232535585160
+    xls_name: "_ZN8AesBlockC1ERKS_"
+  }
+  return_type {
+    as_void {
+    }
+  }
+  params {
+    name: ""
+    type {
+      as_inst {
+        name {
+          name: "AesBlock"
+          fully_qualified_name: "AesBlock"
+          id: 131232535420040
+        }
+      }
+      declaration_location {
+        begin {
+          filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+          line: 81
+          column: 1
+        }
+        end {
+          filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+          line: 83
+          column: 1
+        }
+      }
+    }
+    is_reference: true
+    is_const: true
+  }
+  whole_declaration_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 81
+      column: 8
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 81
+      column: 8
+    }
+  }
+  return_location {
+    begin {
+    }
+    end {
+    }
+  }
+  parameters_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 81
+      column: 8
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 81
+      column: 8
+    }
+  }
+  this_type {
+    as_inst {
+      name {
+        name: "AesBlock"
+        fully_qualified_name: "AesBlock"
+        id: 131232535420040
+      }
+    }
+    declaration_location {
+      begin {
+        filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+        line: 81
+        column: 1
+      }
+      end {
+        filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+        line: 83
+        column: 1
+      }
+    }
+  }
+  is_const: false
+  is_method: true
+}
+all_func_protos {
+  name {
+    name: "rcon_lookup"
+    fully_qualified_name: "rcon_lookup"
+    id: 131232534835704
+    xls_name: "_Z11rcon_lookupi"
+  }
+  return_type {
+    as_int {
+      width: 8
+      is_signed: false
+      is_synthetic: true
+    }
+  }
+  params {
+    name: "idx"
+    type {
+      as_int {
+        width: 32
+        is_signed: true
+        is_synthetic: false
+      }
+    }
+    is_reference: false
+    is_const: false
+  }
+  whole_declaration_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 65
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 71
+      column: 1
+    }
+  }
+  return_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 65
+      column: 8
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 65
+      column: 8
+    }
+  }
+  parameters_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 65
+      column: 23
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.h"
+      line: 65
+      column: 27
+    }
+  }
+}
+all_func_protos {
+  name {
+    name: "ShiftRows"
+    fully_qualified_name: "ShiftRows"
+    id: 131232535447272
+    xls_name: "_Z9ShiftRowsPA4_6XlsIntILi8ELb0EE"
+  }
+  return_type {
+    as_void {
+    }
+  }
+  params {
+    name: "state"
+    type {
+      as_array {
+        element_type {
+          as_array {
+            element_type {
+              as_int {
+                width: 8
+                is_signed: false
+                is_synthetic: true
+              }
+            }
+            size: 4
+            use_tuple: false
+          }
+        }
+        size: 4
+        use_tuple: false
+      }
+    }
+    is_reference: true
+    is_const: false
+  }
+  whole_declaration_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 83
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 107
+      column: 1
+    }
+  }
+  return_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 83
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 83
+      column: 1
+    }
+  }
+  parameters_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 83
+      column: 16
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 83
+      column: 29
+    }
+  }
+}
+all_func_protos {
+  name {
+    name: "Cipher"
+    fully_qualified_name: "Cipher"
+    id: 131232535569904
+    xls_name: "_Z6CipherPA4_6XlsIntILi8ELb0EEPKS0_"
+  }
+  return_type {
+    as_void {
+    }
+  }
+  params {
+    name: "state"
+    type {
+      as_array {
+        element_type {
+          as_array {
+            element_type {
+              as_int {
+                width: 8
+                is_signed: false
+                is_synthetic: true
+              }
+            }
+            size: 4
+            use_tuple: false
+          }
+        }
+        size: 4
+        use_tuple: false
+      }
+    }
+    is_reference: true
+    is_const: false
+  }
+  params {
+    name: "RoundKey"
+    type {
+      as_array {
+        element_type {
+          as_int {
+            width: 8
+            is_signed: false
+            is_synthetic: true
+          }
+        }
+        size: 176
+        use_tuple: false
+      }
+    }
+    is_reference: true
+    is_const: true
+  }
+  whole_declaration_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 135
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 147
+      column: 1
+    }
+  }
+  return_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 135
+      column: 1
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 135
+      column: 1
+    }
+  }
+  parameters_location {
+    begin {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 135
+      column: 13
+    }
+    end {
+      filename: "/home/tnsai/ws/trojan/AES-trojan/src/aes_xls.cc"
+      line: 135
+      column: 61
+    }
+  }
+}
+sources {
+  number: 3
+  path: "../xls/xls/contrib/xlscc/synth_only/xls_int.h"
+}
+sources {
+  number: 1
+  path: "src/aes_xls.cc"
+}
+sources {
+  number: 2
+  path: "src/aes_xls.h"
+}

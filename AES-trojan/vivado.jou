@@ -1,0 +1,24 @@
+#-----------------------------------------------------------
+# Vivado v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 12:34:56 MST 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Fri Mar 20 14:00:29 2026
+# Process ID         : 28080
+# Current directory  : /home/tnsai/ws/trojan/AES-trojan
+# Command line       : vivado -mode batch -source /home/tnsai/ws/trojan/AES-trojan/vivado/synthesize.tcl
+# Log file           : /home/tnsai/ws/trojan/AES-trojan/vivado.log
+# Journal file       : /home/tnsai/ws/trojan/AES-trojan/vivado.jou
+# Running On         : tnsai-Z390-AORUS-PRO-WIFI
+# Platform           : Ubuntu
+# Operating System   : Ubuntu 22.04.5 LTS
+# Processor Detail   : Intel(R) Core(TM) i5-9600K CPU @ 3.70GHz
+# CPU Frequency      : 4299.954 MHz
+# CPU Physical cores : 6
+# CPU Logical cores  : 6
+# Host memory        : 67357 MB
+# Swap memory        : 2147 MB
+# Total Virtual      : 69505 MB
+# Available Virtual  : 53641 MB
+#-----------------------------------------------------------
+source /home/tnsai/ws/trojan/AES-trojan/vivado/synthesize.tcl

@@ -1,0 +1,50 @@
+{
+  "operation": "encrypt",
+  "key": "2b7e151628aed2a6abf7158809cf4f3c",
+  "timestamp": "20260320_143606",
+  "num_traces": 5,
+  "num_samples": 5000,
+  "sample_rate": 29480000.0,
+  "clk_freq": 7370000,
+  "gain_db": 30.0,
+  "protocol": "SS2",
+  "mismatches": 0,
+  "data": [
+    {
+      "index": 0,
+      "plaintext": "04430ab6f060d16df15615a7f02a521f",
+      "ciphertext_hw": "8c6d3620ccfe80793bfeb4e2e24c8fdf",
+      "ciphertext_sw": "8c6d3620ccfe80793bfeb4e2e24c8fdf",
+      "match": true
+    },
+    {
+      "index": 1,
+      "plaintext": "82e17e3c6be2141fdd27cb4e7e5c49c5",
+      "ciphertext_hw": "bb1333271191dee18a19545c2ee1c009",
+      "ciphertext_sw": "bb1333271191dee18a19545c2ee1c009",
+      "match": true
+    },
+    {
+      "index": 2,
+      "plaintext": "7050c0b97c9880ce16d9ee10df8a6575",
+      "ciphertext_hw": "aa49e6458779735927e0d506b075650c",
+      "ciphertext_sw": "aa49e6458779735927e0d506b075650c",
+      "match": true
+    },
+    {
+      "index": 3,
+      "plaintext": "09796bd857a5ec9712ada69392d6fdd6",
+      "ciphertext_hw": "f99c56731d69cf0712e4af8066595360",
+      "ciphertext_sw": "f99c56731d69cf0712e4af8066595360",
+      "match": true
+    },
+    {
+      "index": 4,
+      "plaintext": "8d1657794e583054073d5679be6c8685",
+      "ciphertext_hw": "24874f9633af3df3fd61ca9aba75b6b1",
+      "ciphertext_sw": "24874f9633af3df3fd61ca9aba75b6b1",
+      "match": true
+    }
+  ],
+  "note": "Power traces are stored in the .mat file only (too large for JSON)."
+}
